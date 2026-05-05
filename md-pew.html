@@ -1,0 +1,1354 @@
+<!doctype html>
+<!--
+  md-pew
+  Copyright (c) 2026 Salim Sehng. All rights reserved.
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="author" content="Salim Sehng">
+  <meta name="copyright" content="Copyright (c) 2026 Salim Sehng. All rights reserved.">
+  <title>md-pew</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --surface: #fffdf8;
+      --panel: #fdfaf2;
+      --ink: #1f2420;
+      --muted: #70746f;
+      --line: #d9d4c8;
+      --accent: #1d6d73;
+      --accent-strong: #124f54;
+      --accent-soft: #dceff0;
+      --danger: #a33b32;
+      --code-bg: #202721;
+      --code-ink: #eef4e8;
+      --shadow: 0 18px 46px rgba(31, 36, 32, 0.12);
+      --radius: 8px;
+      color-scheme: light;
+      font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background:
+        linear-gradient(135deg, rgba(29, 109, 115, 0.1), transparent 34%),
+        radial-gradient(circle at 86% 18%, rgba(172, 80, 56, 0.14), transparent 24%),
+        var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    button,
+    textarea,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      min-height: 36px;
+      padding: 0 13px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    button.primary:hover {
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+      transform: none;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100%;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 48px;
+      background: rgba(255, 253, 248, 0.86);
+      border: 1px solid rgba(217, 212, 200, 0.86);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 8px 10px 8px 14px;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 720;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .file-name {
+      color: var(--muted);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+
+    .dirty-dot {
+      display: inline-flex;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 3px rgba(163, 59, 50, 0.12);
+      opacity: 0;
+    }
+
+    .dirty-dot.visible {
+      opacity: 1;
+    }
+
+    .actions,
+    .view-switch {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .view-switch {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(246, 244, 239, 0.76);
+      padding: 3px;
+    }
+
+    .view-switch button {
+      min-height: 30px;
+      border: 0;
+      background: transparent;
+      padding: 0 10px;
+      color: var(--muted);
+    }
+
+    .view-switch button.active {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 1px 6px rgba(31, 36, 32, 0.1);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      background: rgba(255, 253, 248, 0.92);
+      border: 1px solid rgba(217, 212, 200, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .editor {
+      width: 100%;
+      height: 100%;
+      resize: none;
+      border: 0;
+      outline: 0;
+      padding: 28px;
+      background:
+        linear-gradient(90deg, rgba(29, 109, 115, 0.08) 1px, transparent 1px) 0 0 / 28px 28px,
+        var(--surface);
+      color: var(--ink);
+      font: 15px/1.7 "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      tab-size: 2;
+    }
+
+    .preview {
+      height: 100%;
+      overflow: auto;
+      padding: 30px clamp(24px, 5vw, 58px);
+      background: var(--panel);
+      line-height: 1.75;
+    }
+
+    .preview > *:first-child {
+      margin-top: 0;
+    }
+
+    .preview h1,
+    .preview h2,
+    .preview h3,
+    .preview h4,
+    .preview h5,
+    .preview h6 {
+      line-height: 1.22;
+      margin: 1.55em 0 0.55em;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .preview h1 {
+      font-size: clamp(30px, 5vw, 52px);
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.22em;
+    }
+
+    .preview h2 {
+      font-size: clamp(24px, 3.2vw, 34px);
+    }
+
+    .preview h3 {
+      font-size: 21px;
+    }
+
+    .preview p,
+    .preview ul,
+    .preview ol,
+    .preview blockquote,
+    .preview table,
+    .preview pre {
+      margin: 0 0 1.05em;
+    }
+
+    .preview a {
+      color: var(--accent-strong);
+      text-decoration-thickness: 2px;
+      text-underline-offset: 3px;
+    }
+
+    .preview blockquote {
+      border-left: 4px solid var(--accent);
+      padding: 0.15em 0 0.15em 1em;
+      color: #4e554f;
+      background: rgba(220, 239, 240, 0.58);
+    }
+
+    .preview code {
+      background: rgba(29, 109, 115, 0.12);
+      border: 1px solid rgba(29, 109, 115, 0.2);
+      border-radius: 5px;
+      padding: 0.08em 0.32em;
+      font: 0.92em/1.5 "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    }
+
+    .preview pre {
+      overflow: auto;
+      padding: 16px 18px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+    }
+
+    .preview pre code {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    .preview table {
+      width: 100%;
+      border-collapse: collapse;
+      display: block;
+      overflow-x: auto;
+    }
+
+    .preview th,
+    .preview td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .preview th {
+      background: rgba(29, 109, 115, 0.12);
+    }
+
+    .preview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius);
+    }
+
+    .preview .mermaid-diagram {
+      width: fit-content;
+      max-width: min(100%, 920px);
+      max-height: min(70vh, 560px);
+      margin: 0 auto 1.15em;
+      overflow: auto;
+      padding: 14px;
+      position: relative;
+      background: rgba(255, 253, 248, 0.78);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .preview .mermaid-diagram.expanded {
+      max-width: none;
+      max-height: none;
+    }
+
+    .preview .mermaid-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      margin: 0 0 10px auto;
+      padding: 0 10px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      border-color: rgba(95, 94, 90, 0.42);
+      background: rgba(255, 253, 248, 0.94);
+      color: var(--accent-strong);
+      font: 12px/1.2 "Cascadia Code", "SFMono-Regular", Consolas, sans-serif;
+      box-shadow: 0 4px 14px rgba(31, 36, 32, 0.12);
+    }
+
+    .preview .mermaid-diagram.has-overflow .mermaid-toggle,
+    .preview .mermaid-diagram.expanded .mermaid-toggle {
+      display: flex;
+    }
+
+    .preview .mermaid-diagram svg {
+      display: block;
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, sans-serif;
+    }
+
+    .preview hr {
+      border: 0;
+      border-top: 1px solid var(--line);
+      margin: 2em 0;
+    }
+
+    .statusbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 30px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 0 4px;
+    }
+
+    .drop-mask {
+      position: fixed;
+      inset: 14px;
+      display: none;
+      place-items: center;
+      z-index: 10;
+      border: 2px dashed var(--accent);
+      border-radius: 12px;
+      background: rgba(246, 244, 239, 0.78);
+      backdrop-filter: blur(10px);
+      color: var(--accent-strong);
+      font-size: clamp(24px, 5vw, 46px);
+      font-weight: 760;
+      pointer-events: none;
+    }
+
+    .drop-mask.visible {
+      display: grid;
+    }
+
+    .workspace[data-view="edit"] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workspace[data-view="edit"] .preview-pane {
+      display: none;
+    }
+
+    .workspace[data-view="preview"] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workspace[data-view="preview"] .editor-pane {
+      display: none;
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        min-height: 100%;
+        height: auto;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .brand {
+        width: 100%;
+      }
+
+      .actions,
+      .view-switch {
+        flex-wrap: wrap;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+        min-height: 74vh;
+      }
+
+      .workspace[data-view="split"] .pane {
+        min-height: 54vh;
+      }
+
+      .statusbar {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="toolbar">
+      <div class="brand">
+        <div class="brand-title">md-pew</div>
+        <span id="dirtyDot" class="dirty-dot" aria-hidden="true"></span>
+        <div id="fileName" class="file-name">untitled.md</div>
+      </div>
+
+      <div class="view-switch" role="tablist" aria-label="View mode">
+        <button type="button" data-view-button="edit">编辑</button>
+        <button type="button" data-view-button="split" class="active">分栏</button>
+        <button type="button" data-view-button="preview">预览</button>
+      </div>
+
+      <div class="actions">
+        <button id="openButton" type="button">打开</button>
+        <button id="saveButton" type="button" class="primary">保存</button>
+        <button id="downloadButton" type="button">下载</button>
+        <button id="exportButton" type="button">导出 HTML</button>
+      </div>
+    </header>
+
+    <main id="workspace" class="workspace" data-view="split">
+      <section class="pane editor-pane" aria-label="Markdown editor">
+        <textarea id="editor" class="editor" spellcheck="false"></textarea>
+      </section>
+      <section class="pane preview-pane" aria-label="Markdown preview">
+        <article id="preview" class="preview"></article>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <span id="status">就绪</span>
+      <span id="stats">0 词 · 0 字符</span>
+    </footer>
+  </div>
+
+  <div id="dropMask" class="drop-mask">释放打开 Markdown</div>
+  <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
+
+  <script>
+    const editor = document.getElementById("editor");
+    const preview = document.getElementById("preview");
+    const fileName = document.getElementById("fileName");
+    const statusEl = document.getElementById("status");
+    const statsEl = document.getElementById("stats");
+    const dirtyDot = document.getElementById("dirtyDot");
+    const dropMask = document.getElementById("dropMask");
+    const fileInput = document.getElementById("fileInput");
+    const workspace = document.getElementById("workspace");
+
+    let activeFileHandle = null;
+    let activeFileName = "untitled.md";
+    let savedText = "";
+    let currentView = "split";
+    let dragDepth = 0;
+    let renderTimer = 0;
+
+    const starterMarkdown = `# 一页笔记
+
+今天的工作可以先分成三块，保持文档短一点，修改起来更快。
+
+## 清单
+
+- 整理需求
+- 写第一版
+- 回看细节
+
+\`\`\`js
+const message = "Hello Markdown";
+console.log(message);
+\`\`\`
+
+| 项目 | 状态 |
+| --- | --- |
+| 预览器 | 进行中 |
+`;
+
+    editor.value = starterMarkdown;
+    savedText = starterMarkdown;
+    renderNow();
+    updateMeta("就绪");
+
+    document.getElementById("openButton").addEventListener("click", openFile);
+    document.getElementById("saveButton").addEventListener("click", saveFile);
+    document.getElementById("downloadButton").addEventListener("click", downloadMarkdown);
+    document.getElementById("exportButton").addEventListener("click", exportHtml);
+    fileInput.addEventListener("change", handleInputFile);
+
+    document.querySelectorAll("[data-view-button]").forEach((button) => {
+      button.addEventListener("click", () => setView(button.dataset.viewButton));
+    });
+
+    editor.addEventListener("input", () => {
+      window.clearTimeout(renderTimer);
+      renderTimer = window.setTimeout(renderNow, 80);
+      updateMeta("编辑中");
+    });
+
+    editor.addEventListener("scroll", () => {
+      if (currentView !== "split") return;
+      const maxEditorScroll = editor.scrollHeight - editor.clientHeight;
+      const maxPreviewScroll = preview.scrollHeight - preview.clientHeight;
+      if (maxEditorScroll <= 0 || maxPreviewScroll <= 0) return;
+      preview.scrollTop = (editor.scrollTop / maxEditorScroll) * maxPreviewScroll;
+    });
+
+    window.addEventListener("keydown", (event) => {
+      const isSave = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s";
+      if (!isSave) return;
+      event.preventDefault();
+      saveFile();
+    });
+
+    window.addEventListener("dragenter", (event) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepth += 1;
+      dropMask.classList.add("visible");
+    });
+
+    window.addEventListener("dragover", (event) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    });
+
+    window.addEventListener("dragleave", (event) => {
+      if (!hasFiles(event)) return;
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (dragDepth === 0) dropMask.classList.remove("visible");
+    });
+
+    window.addEventListener("drop", async (event) => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      dragDepth = 0;
+      dropMask.classList.remove("visible");
+      await handleDrop(event);
+    });
+
+    async function openFile() {
+      try {
+        if ("showOpenFilePicker" in window) {
+          const [handle] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{
+              description: "Markdown",
+              accept: {
+                "text/markdown": [".md", ".markdown"],
+                "text/plain": [".txt"]
+              }
+            }]
+          });
+          const file = await handle.getFile();
+          await loadFile(file, handle);
+          return;
+        }
+      } catch (error) {
+        if (error && error.name === "AbortError") return;
+        showError(error);
+        return;
+      }
+
+      fileInput.click();
+    }
+
+    async function handleInputFile() {
+      const [file] = fileInput.files || [];
+      if (!file) return;
+      await loadFile(file, null);
+      fileInput.value = "";
+    }
+
+    async function handleDrop(event) {
+      const items = Array.from(event.dataTransfer.items || []);
+
+      for (const item of items) {
+        if (item.kind !== "file") continue;
+
+        if (typeof item.getAsFileSystemHandle === "function") {
+          try {
+            const handle = await item.getAsFileSystemHandle();
+            if (handle && handle.kind === "file") {
+              const file = await handle.getFile();
+              await loadFile(file, handle);
+              return;
+            }
+          } catch (_) {
+            // Some browsers expose the API but block it for local files.
+          }
+        }
+
+        const file = item.getAsFile();
+        if (file) {
+          await loadFile(file, null);
+          return;
+        }
+      }
+
+      const [file] = Array.from(event.dataTransfer.files || []);
+      if (file) await loadFile(file, null);
+    }
+
+    async function loadFile(file, handle) {
+      const text = await file.text();
+      activeFileHandle = handle;
+      activeFileName = file.name || "untitled.md";
+      fileName.textContent = activeFileName;
+      editor.value = text;
+      savedText = text;
+      renderNow();
+      updateMeta(handle ? "已打开，可直接保存" : "已打开副本");
+      setView(window.innerWidth < 860 ? "edit" : "split");
+    }
+
+    async function saveFile() {
+      const text = editor.value;
+
+      try {
+        if (activeFileHandle && typeof activeFileHandle.createWritable === "function") {
+          const writable = await activeFileHandle.createWritable();
+          await writable.write(text);
+          await writable.close();
+          savedText = text;
+          updateMeta("已保存");
+          return;
+        }
+
+        if ("showSaveFilePicker" in window) {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: activeFileName,
+            types: [{
+              description: "Markdown",
+              accept: { "text/markdown": [".md"], "text/plain": [".txt"] }
+            }]
+          });
+          activeFileHandle = handle;
+          activeFileName = handle.name || activeFileName;
+          fileName.textContent = activeFileName;
+          const writable = await handle.createWritable();
+          await writable.write(text);
+          await writable.close();
+          savedText = text;
+          updateMeta("已保存");
+          return;
+        }
+      } catch (error) {
+        if (error && error.name === "AbortError") return;
+        showError(error);
+        return;
+      }
+
+      downloadMarkdown();
+      savedText = text;
+      updateMeta("已下载");
+    }
+
+    function downloadMarkdown() {
+      downloadBlob(editor.value, activeFileName || "document.md", "text/markdown;charset=utf-8");
+    }
+
+    function exportHtml() {
+      const title = escapeHtml(activeFileName.replace(/\.(md|markdown|txt)$/i, "")) || "Markdown";
+      const html = `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${title}</title>
+  <style>
+    body{max-width:860px;margin:48px auto;padding:0 22px;color:#1f2420;background:#fdfaf2;font:18px/1.75 Georgia,"Times New Roman",serif}
+    h1,h2,h3{line-height:1.25} code{background:#e4efec;padding:.08em .32em;border-radius:4px} pre{overflow:auto;background:#202721;color:#eef4e8;padding:16px;border-radius:8px} pre code{background:transparent;padding:0} blockquote{border-left:4px solid #1d6d73;margin-left:0;padding-left:1em;color:#4e554f} table{width:100%;border-collapse:collapse}td,th{border:1px solid #d9d4c8;padding:8px 10px;text-align:left} img{max-width:100%;height:auto}.mermaid-diagram{width:fit-content;max-width:min(100%,920px);max-height:min(70vh,560px);margin:0 auto 1.15em;overflow:auto;padding:14px;position:relative;border:1px solid #d9d4c8;border-radius:8px;background:#fffdf8}.mermaid-diagram.expanded{max-width:none;max-height:none}.mermaid-toggle{display:none;align-items:center;justify-content:center;min-height:28px;margin:0 0 10px auto;padding:0 10px;position:sticky;top:0;z-index:2;border:1px solid rgba(95,94,90,.42);border-radius:7px;background:rgba(255,253,248,.94);color:#124f54;font:12px/1.2 Consolas,monospace;box-shadow:0 4px 14px rgba(31,36,32,.12);cursor:pointer}.mermaid-diagram.has-overflow .mermaid-toggle,.mermaid-diagram.expanded .mermaid-toggle{display:flex}.mermaid-diagram svg{display:block;width:auto;max-width:100%;height:auto;font-family:Consolas,monospace}
+  </style>
+</head>
+<body>
+${markdownToHtml(editor.value)}
+<script>
+(${setupMermaidToggles.toString()})(document);
+<\/script>
+</body>
+</html>`;
+      const outputName = activeFileName.replace(/\.(md|markdown|txt)$/i, "") + ".html";
+      downloadBlob(html, outputName, "text/html;charset=utf-8");
+      updateMeta("已导出 HTML");
+    }
+
+    function renderNow() {
+      preview.innerHTML = markdownToHtml(editor.value);
+      setupMermaidToggles(preview);
+      updateMeta();
+    }
+
+    function setupMermaidToggles(root) {
+      const diagrams = Array.from((root || document).querySelectorAll(".mermaid-diagram"));
+
+      diagrams.forEach((diagram) => {
+        const button = diagram.querySelector(".mermaid-toggle");
+        if (!button) return;
+
+        const sync = () => {
+          const expanded = diagram.classList.contains("expanded");
+          const hasOverflow = diagram.scrollHeight > diagram.clientHeight + 1 || diagram.scrollWidth > diagram.clientWidth + 1;
+          diagram.classList.toggle("has-overflow", hasOverflow);
+          button.textContent = expanded ? "收起" : "展开";
+          button.setAttribute("aria-expanded", expanded ? "true" : "false");
+        };
+
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          diagram.classList.toggle("expanded");
+          sync();
+        });
+
+        if ("requestAnimationFrame" in window) {
+          window.requestAnimationFrame(sync);
+        } else {
+          window.setTimeout(sync, 0);
+        }
+      });
+    }
+
+    function setView(view) {
+      currentView = view;
+      workspace.dataset.view = view;
+      document.querySelectorAll("[data-view-button]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.viewButton === view);
+      });
+    }
+
+    function updateMeta(message) {
+      if (message) statusEl.textContent = message;
+      const text = editor.value;
+      const words = (text.match(/[\p{L}\p{N}_-]+/gu) || []).length;
+      statsEl.textContent = `${words} 词 · ${text.length} 字符`;
+      dirtyDot.classList.toggle("visible", text !== savedText);
+    }
+
+    function showError(error) {
+      console.error(error);
+      statusEl.textContent = error && error.message ? error.message : "操作失败";
+    }
+
+    function hasFiles(event) {
+      return Array.from(event.dataTransfer && event.dataTransfer.types || []).includes("Files");
+    }
+
+    function downloadBlob(content, name, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = name || "document.md";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function markdownToHtml(markdown) {
+      const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
+      const html = [];
+      let index = 0;
+
+      while (index < lines.length) {
+        const line = lines[index];
+
+        if (/^\s*$/.test(line)) {
+          index += 1;
+          continue;
+        }
+
+        const fence = line.match(/^```([A-Za-z0-9_-]+)?\s*$/);
+        if (fence) {
+          const code = [];
+          index += 1;
+          while (index < lines.length && !/^```\s*$/.test(lines[index])) {
+            code.push(lines[index]);
+            index += 1;
+          }
+          if (index < lines.length) index += 1;
+          if ((fence[1] || "").toLowerCase() === "mermaid") {
+            html.push(renderMermaidBlock(code.join("\n")));
+            continue;
+          }
+          const lang = fence[1] ? ` data-lang="${escapeHtml(fence[1])}"` : "";
+          html.push(`<pre${lang}><code>${escapeHtml(code.join("\n"))}</code></pre>`);
+          continue;
+        }
+
+        if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+          html.push("<hr>");
+          index += 1;
+          continue;
+        }
+
+        const heading = line.match(/^(#{1,6})\s+(.+)$/);
+        if (heading) {
+          const level = heading[1].length;
+          html.push(`<h${level}>${inlineMarkdown(heading[2].trim())}</h${level}>`);
+          index += 1;
+          continue;
+        }
+
+        if (isTableStart(lines, index)) {
+          const tableLines = [];
+          tableLines.push(lines[index], lines[index + 1]);
+          index += 2;
+          while (index < lines.length && /\|/.test(lines[index]) && !/^\s*$/.test(lines[index])) {
+            tableLines.push(lines[index]);
+            index += 1;
+          }
+          html.push(renderTable(tableLines));
+          continue;
+        }
+
+        if (/^\s*>\s?/.test(line)) {
+          const quote = [];
+          while (index < lines.length && /^\s*>\s?/.test(lines[index])) {
+            quote.push(lines[index].replace(/^\s*>\s?/, ""));
+            index += 1;
+          }
+          html.push(`<blockquote>${markdownToHtml(quote.join("\n"))}</blockquote>`);
+          continue;
+        }
+
+        if (/^\s*[-*+]\s+/.test(line)) {
+          const items = [];
+          while (index < lines.length && /^\s*[-*+]\s+/.test(lines[index])) {
+            items.push(lines[index].replace(/^\s*[-*+]\s+/, ""));
+            index += 1;
+          }
+          html.push(`<ul>${items.map((item) => `<li>${inlineMarkdown(item)}</li>`).join("")}</ul>`);
+          continue;
+        }
+
+        if (/^\s*\d+[.)]\s+/.test(line)) {
+          const items = [];
+          while (index < lines.length && /^\s*\d+[.)]\s+/.test(lines[index])) {
+            items.push(lines[index].replace(/^\s*\d+[.)]\s+/, ""));
+            index += 1;
+          }
+          html.push(`<ol>${items.map((item) => `<li>${inlineMarkdown(item)}</li>`).join("")}</ol>`);
+          continue;
+        }
+
+        const paragraph = [];
+        while (
+          index < lines.length &&
+          !/^\s*$/.test(lines[index]) &&
+          !/^```/.test(lines[index]) &&
+          !/^(#{1,6})\s+/.test(lines[index]) &&
+          !/^\s*[-*+]\s+/.test(lines[index]) &&
+          !/^\s*\d+[.)]\s+/.test(lines[index]) &&
+          !/^\s*>\s?/.test(lines[index]) &&
+          !/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(lines[index]) &&
+          !isTableStart(lines, index)
+        ) {
+          paragraph.push(lines[index]);
+          index += 1;
+        }
+        html.push(`<p>${inlineMarkdown(paragraph.join(" "))}</p>`);
+      }
+
+      return html.join("\n");
+    }
+
+    function renderMermaidBlock(source) {
+      const diagram = parseMermaidFlowchart(source);
+      if (!diagram) {
+        return `<pre data-lang="mermaid"><code>${escapeHtml(source)}</code></pre>`;
+      }
+      return renderFlowchartSvg(diagram);
+    }
+
+    function parseMermaidFlowchart(source) {
+      const lines = source.replace(/\r\n?/g, "\n").split("\n");
+      const diagram = {
+        direction: "TD",
+        nodes: new Map(),
+        edges: [],
+        classDefs: new Map(),
+        order: []
+      };
+
+      for (const rawLine of lines) {
+        const line = rawLine.trim().replace(/;$/, "");
+        if (!line || line.startsWith("%%")) continue;
+
+        const header = line.match(/^(?:flowchart|graph)\s+(TD|TB|BT|LR|RL)\b/i);
+        if (header) {
+          diagram.direction = header[1].toUpperCase();
+          continue;
+        }
+
+        const classDef = line.match(/^classDef\s+([A-Za-z0-9_-]+)\s+(.+)$/);
+        if (classDef) {
+          diagram.classDefs.set(classDef[1], parseMermaidStyle(classDef[2]));
+          continue;
+        }
+
+        const classLine = line.match(/^class\s+(.+?)\s+([A-Za-z0-9_-]+)$/);
+        if (classLine) {
+          classLine[1].split(",").map((id) => id.trim()).filter(Boolean).forEach((id) => {
+            ensureMermaidNode(diagram, id).className = classLine[2];
+          });
+          continue;
+        }
+
+        const sourceNode = readMermaidNodeToken(line, 0);
+        if (!sourceNode) continue;
+        const edge = readMermaidEdgeToken(line, sourceNode.end);
+        if (!edge) {
+          mergeMermaidNode(diagram, sourceNode);
+          continue;
+        }
+
+        const targetNode = readMermaidNodeToken(line, edge.end);
+        if (!targetNode) continue;
+        mergeMermaidNode(diagram, sourceNode);
+        mergeMermaidNode(diagram, targetNode);
+        diagram.edges.push({
+          from: sourceNode.id,
+          to: targetNode.id,
+          label: edge.label,
+          dotted: edge.dotted
+        });
+      }
+
+      if (!diagram.nodes.size || !diagram.edges.length) return null;
+      return diagram;
+    }
+
+    function parseMermaidStyle(styleText) {
+      const style = {};
+      styleText.split(",").forEach((part) => {
+        const pair = part.split(":");
+        if (pair.length < 2) return;
+        const key = pair.shift().trim();
+        const value = pair.join(":").trim();
+        if (["fill", "stroke", "color"].includes(key)) style[key] = value;
+      });
+      return style;
+    }
+
+    function readMermaidNodeToken(text, start) {
+      let index = skipMermaidSpaces(text, start);
+      const idStart = index;
+      while (index < text.length && /[A-Za-z0-9_-]/.test(text[index])) index += 1;
+      if (index === idStart) return null;
+
+      const id = text.slice(idStart, index);
+      let label = "";
+      const opener = text[index];
+      const closer = opener === "[" ? "]" : opener === "(" ? ")" : opener === "{" ? "}" : "";
+      if (closer) {
+        index += 1;
+        const labelStart = index;
+        let depth = 1;
+        while (index < text.length && depth > 0) {
+          if (text[index] === opener) depth += 1;
+          if (text[index] === closer) depth -= 1;
+          if (depth > 0) index += 1;
+        }
+        label = text.slice(labelStart, index);
+        if (text[index] === closer) index += 1;
+      }
+
+      let className = "";
+      if (text.slice(index, index + 3) === ":::") {
+        index += 3;
+        const classStart = index;
+        while (index < text.length && /[A-Za-z0-9_-]/.test(text[index])) index += 1;
+        className = text.slice(classStart, index);
+      }
+
+      return { id, label: label || id, className, end: index };
+    }
+
+    function readMermaidEdgeToken(text, start) {
+      let index = skipMermaidSpaces(text, start);
+      const chunk = text.slice(index);
+      let match = chunk.match(/^-->\|([^|]*)\|/);
+      if (match) return { label: match[1].trim(), dotted: false, end: index + match[0].length };
+
+      match = chunk.match(/^-\.(.*?)\.->/);
+      if (match) return { label: match[1].trim(), dotted: true, end: index + match[0].length };
+
+      match = chunk.match(/^--\s*(.*?)\s*-->/);
+      if (match) return { label: match[1].trim(), dotted: false, end: index + match[0].length };
+
+      if (chunk.startsWith("-.->")) return { label: "", dotted: true, end: index + 4 };
+      if (chunk.startsWith("-->")) return { label: "", dotted: false, end: index + 3 };
+      if (chunk.startsWith("==>")) return { label: "", dotted: false, end: index + 3 };
+      return null;
+    }
+
+    function skipMermaidSpaces(text, index) {
+      while (index < text.length && /\s/.test(text[index])) index += 1;
+      return index;
+    }
+
+    function mergeMermaidNode(diagram, token) {
+      const node = ensureMermaidNode(diagram, token.id);
+      if (token.label && token.label !== token.id) node.label = token.label;
+      if (token.className) node.className = token.className;
+      return node;
+    }
+
+    function ensureMermaidNode(diagram, id) {
+      if (!diagram.nodes.has(id)) {
+        diagram.nodes.set(id, { id, label: id, className: "" });
+        diagram.order.push(id);
+      }
+      return diagram.nodes.get(id);
+    }
+
+    function renderFlowchartSvg(diagram) {
+      const layout = layoutMermaidFlowchart(diagram);
+      const edgePaths = diagram.edges.map((edge, index) => renderMermaidEdge(edge, index, layout)).join("");
+      const nodeGroups = layout.nodes.map((node) => renderMermaidNode(node, diagram.classDefs)).join("");
+
+      return `<figure class="mermaid-diagram"><button type="button" class="mermaid-toggle" aria-expanded="false">展开</button><svg width="${layout.width}" height="${layout.height}" viewBox="0 0 ${layout.width} ${layout.height}" role="img" aria-label="Mermaid flowchart" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="mermaidArrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+    <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f5e5a"></path>
+  </marker>
+</defs>
+${edgePaths}
+${nodeGroups}
+</svg></figure>`;
+    }
+
+    function layoutMermaidFlowchart(diagram) {
+      const levels = assignMermaidLevels(diagram);
+      const rows = [];
+      const gapX = 34;
+      const gapY = 48;
+      const margin = 24;
+
+      diagram.order.forEach((id) => {
+        const node = diagram.nodes.get(id);
+        const labelLines = mermaidLabelLines(node.label);
+        const width = Math.max(126, Math.min(238, Math.max(...labelLines.map(estimateTextWidth)) + 28));
+        const height = Math.max(44, labelLines.length * 19 + 22);
+        const item = { ...node, lines: labelLines, width, height, x: 0, y: 0 };
+        const level = levels.get(id) || 0;
+        if (!rows[level]) rows[level] = [];
+        rows[level].push(item);
+      });
+
+      let canvasWidth = 0;
+      let canvasHeight = margin;
+      rows.forEach((row) => {
+        const rowWidth = row.reduce((sum, node) => sum + node.width, 0) + gapX * Math.max(0, row.length - 1);
+        const rowHeight = Math.max(...row.map((node) => node.height));
+        canvasWidth = Math.max(canvasWidth, rowWidth + margin * 2);
+        row.forEach((node) => {
+          node.y = canvasHeight + (rowHeight - node.height) / 2;
+        });
+        canvasHeight += rowHeight + gapY;
+      });
+      canvasHeight = Math.max(140, canvasHeight - gapY + margin);
+
+      rows.forEach((row) => {
+        const rowWidth = row.reduce((sum, node) => sum + node.width, 0) + gapX * Math.max(0, row.length - 1);
+        let x = (canvasWidth - rowWidth) / 2;
+        row.forEach((node) => {
+          node.x = x;
+          x += node.width + gapX;
+        });
+      });
+
+      const nodes = rows.flat();
+      const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+      return {
+        width: Math.round(canvasWidth),
+        height: Math.round(canvasHeight),
+        nodes,
+        nodeMap
+      };
+    }
+
+    function assignMermaidLevels(diagram) {
+      const outgoing = new Map();
+      const incoming = new Map();
+      diagram.order.forEach((id) => {
+        outgoing.set(id, []);
+        incoming.set(id, 0);
+      });
+      diagram.edges.forEach((edge) => {
+        if (!outgoing.has(edge.from) || !incoming.has(edge.to)) return;
+        outgoing.get(edge.from).push(edge.to);
+        incoming.set(edge.to, incoming.get(edge.to) + 1);
+      });
+
+      const levels = new Map();
+      const roots = diagram.order.filter((id) => incoming.get(id) === 0);
+      const starters = roots.length ? roots : [diagram.order[0]];
+
+      starters.forEach((id) => visitMermaidLevel(id, 0, new Set(), outgoing, levels));
+      diagram.order.forEach((id) => {
+        if (!levels.has(id)) visitMermaidLevel(id, 0, new Set(), outgoing, levels);
+      });
+
+      return levels;
+    }
+
+    function visitMermaidLevel(id, level, stack, outgoing, levels) {
+      if (stack.has(id)) return;
+      if (!levels.has(id) || level > levels.get(id)) levels.set(id, level);
+      const nextStack = new Set(stack);
+      nextStack.add(id);
+      (outgoing.get(id) || []).forEach((nextId) => visitMermaidLevel(nextId, level + 1, nextStack, outgoing, levels));
+    }
+
+    function renderMermaidNode(node, classDefs) {
+      const style = classDefs.get(node.className) || {};
+      const fill = safeMermaidColor(style.fill, "#fffdf8");
+      const stroke = safeMermaidColor(style.stroke, "#5f5e5a");
+      const color = safeMermaidColor(style.color, "#2c2c2a");
+      const textY = node.y + node.height / 2 - ((node.lines.length - 1) * 9.5);
+      const lines = node.lines.map((line, index) => {
+        return `<tspan x="${node.x + node.width / 2}" y="${textY + index * 19}">${escapeHtml(line)}</tspan>`;
+      }).join("");
+
+      return `<g>
+<rect x="${node.x}" y="${node.y}" width="${node.width}" height="${node.height}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="2"></rect>
+<text text-anchor="middle" dominant-baseline="middle" fill="${color}" font-size="13" font-weight="650">${lines}</text>
+</g>`;
+    }
+
+    function renderMermaidEdge(edge, index, layout) {
+      const from = layout.nodeMap.get(edge.from);
+      const to = layout.nodeMap.get(edge.to);
+      if (!from || !to) return "";
+
+      const backEdge = to.y <= from.y;
+      let path = "";
+      let labelX = 0;
+      let labelY = 0;
+
+      if (backEdge) {
+        const x1 = from.x;
+        const y1 = from.y + from.height / 2;
+        const x2 = to.x;
+        const y2 = to.y + to.height / 2;
+        const controlX = Math.min(x1, x2) - 62;
+        path = `M ${x1} ${y1} C ${controlX} ${y1}, ${controlX} ${y2}, ${x2} ${y2}`;
+        labelX = controlX;
+        labelY = (y1 + y2) / 2;
+      } else {
+        const x1 = from.x + from.width / 2;
+        const y1 = from.y + from.height;
+        const x2 = to.x + to.width / 2;
+        const y2 = to.y;
+        const midY = (y1 + y2) / 2;
+        path = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
+        labelX = (x1 + x2) / 2;
+        labelY = midY - 8;
+      }
+
+      const dash = edge.dotted ? ' stroke-dasharray="6 6"' : "";
+      const label = edge.label ? renderMermaidEdgeLabel(edge.label, labelX, labelY) : "";
+      return `<path d="${path}" fill="none" stroke="#5f5e5a" stroke-width="2"${dash} marker-end="url(#mermaidArrow)"></path>${label}`;
+    }
+
+    function renderMermaidEdgeLabel(label, x, y) {
+      const safeLabel = escapeHtml(label);
+      const width = Math.max(56, Math.min(220, estimateTextWidth(label) + 18));
+      return `<g>
+<rect x="${x - width / 2}" y="${y - 16}" width="${width}" height="24" rx="6" fill="#fdfaf2" stroke="#d9d4c8"></rect>
+<text x="${x}" y="${y - 3}" text-anchor="middle" dominant-baseline="middle" fill="#4e554f" font-size="13">${safeLabel}</text>
+</g>`;
+    }
+
+    function mermaidLabelLines(label) {
+      return String(label || "")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+    }
+
+    function estimateTextWidth(text) {
+      let width = 0;
+      for (const char of String(text || "")) {
+        width += /[\u3400-\u9fff\uff00-\uffef]/.test(char) ? 14 : 7.4;
+      }
+      return width;
+    }
+
+    function safeMermaidColor(value, fallback) {
+      const color = String(value || "").trim();
+      if (/^#[0-9a-f]{3,8}$/i.test(color)) return color;
+      if (/^(?:rgb|rgba|hsl|hsla)\([0-9.,%\s]+\)$/i.test(color)) return escapeAttribute(color);
+      if (/^[a-z]+$/i.test(color)) return escapeAttribute(color);
+      return fallback;
+    }
+
+    function isTableStart(lines, index) {
+      if (index + 1 >= lines.length) return false;
+      return /\|/.test(lines[index]) && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1]);
+    }
+
+    function renderTable(lines) {
+      const header = splitTableRow(lines[0]);
+      const body = lines.slice(2).map(splitTableRow);
+      const headHtml = `<thead><tr>${header.map((cell) => `<th>${inlineMarkdown(cell.trim())}</th>`).join("")}</tr></thead>`;
+      const bodyHtml = `<tbody>${body.map((row) => `<tr>${row.map((cell) => `<td>${inlineMarkdown(cell.trim())}</td>`).join("")}</tr>`).join("")}</tbody>`;
+      return `<table>${headHtml}${bodyHtml}</table>`;
+    }
+
+    function splitTableRow(row) {
+      const trimmed = row.trim().replace(/^\|/, "").replace(/\|$/, "");
+      const cells = [];
+      let current = "";
+      let escaped = false;
+
+      for (const char of trimmed) {
+        if (char === "\\" && !escaped) {
+          escaped = true;
+          current += char;
+          continue;
+        }
+        if (char === "|" && !escaped) {
+          cells.push(current.replace(/\\\|/g, "|"));
+          current = "";
+          continue;
+        }
+        escaped = false;
+        current += char;
+      }
+
+      cells.push(current.replace(/\\\|/g, "|"));
+      return cells;
+    }
+
+    function inlineMarkdown(text) {
+      const codeSpans = [];
+      let output = escapeHtml(text).replace(/`([^`]+)`/g, (_, code) => {
+        const key = `\u0000CODE${codeSpans.length}\u0000`;
+        codeSpans.push(`<code>${code}</code>`);
+        return key;
+      });
+
+      output = output
+        .replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_, alt, url) => {
+          const safeUrl = safeHref(url);
+          return safeUrl ? `<img src="${safeUrl}" alt="${alt}">` : "";
+        })
+        .replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_, label, url) => {
+          const safeUrl = safeHref(url);
+          return safeUrl ? `<a href="${safeUrl}" target="_blank" rel="noreferrer noopener">${label}</a>` : label;
+        })
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/__([^_]+)__/g, "<strong>$1</strong>")
+        .replace(/\*([^*\s][^*]*?)\*/g, "<em>$1</em>")
+        .replace(/_([^_\s][^_]*?)_/g, "<em>$1</em>")
+        .replace(/~~([^~]+)~~/g, "<del>$1</del>");
+
+      codeSpans.forEach((html, index) => {
+        output = output.replace(`\u0000CODE${index}\u0000`, html);
+      });
+
+      return output;
+    }
+
+    function safeHref(raw) {
+      const url = String(raw || "").trim();
+      if (!url) return "";
+      if (/^(https?:|mailto:|\.{0,2}\/|#)/i.test(url)) return escapeAttribute(url);
+      if (/^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(url)) return escapeAttribute(url);
+      if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) return escapeAttribute(url);
+      return "";
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, "&#96;");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+
+# Future JS/Tauri artifacts
+node_modules/
+dist/
+build/
+target/
+src-tauri/target/
