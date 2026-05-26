@@ -2356,8 +2356,11 @@ ${markdownToHtml(editor.value)}
         nodes: new Map(),
         edges: [],
         classDefs: new Map(),
+        groups: new Map(),
+        groupOrder: [],
         order: []
       };
+      const activeGroups = [];
 
       for (const rawLine of lines) {
         const line = rawLine.trim().replace(/;$/, "");
@@ -2369,17 +2372,41 @@ ${markdownToHtml(editor.value)}
           continue;
         }
 
+        const subgraph = readMermaidSubgraph(line, diagram.groupOrder.length + 1);
+        if (subgraph) {
+          subgraph.parentId = activeGroups[activeGroups.length - 1] || "";
+          diagram.groups.set(subgraph.id, subgraph);
+          diagram.groupOrder.push(subgraph.id);
+          activeGroups.push(subgraph.id);
+          continue;
+        }
+
+        if (/^end$/i.test(line)) {
+          activeGroups.pop();
+          continue;
+        }
+
         const classDef = line.match(/^classDef\s+([A-Za-z0-9_-]+)\s+(.+)$/);
         if (classDef) {
           diagram.classDefs.set(classDef[1], parseMermaidStyle(classDef[2]));
           continue;
         }
 
+        const styleLine = line.match(/^style\s+([A-Za-z0-9_-]+)\s+(.+)$/i);
+        if (styleLine) {
+          const node = ensureMermaidNode(diagram, styleLine[1]);
+          node.style = { ...node.style, ...parseMermaidStyle(styleLine[2]) };
+          addMermaidNodesToGroups(diagram, [styleLine[1]], activeGroups);
+          continue;
+        }
+
         const classLine = line.match(/^class\s+(.+?)\s+([A-Za-z0-9_-]+)$/);
         if (classLine) {
-          classLine[1].split(",").map((id) => id.trim()).filter(Boolean).forEach((id) => {
+          const ids = classLine[1].split(",").map((id) => id.trim()).filter(Boolean);
+          ids.forEach((id) => {
             ensureMermaidNode(diagram, id).className = classLine[2];
           });
+          addMermaidNodesToGroups(diagram, ids, activeGroups);
           continue;
         }
 
@@ -2388,6 +2415,7 @@ ${markdownToHtml(editor.value)}
         const edge = readMermaidEdgeToken(line, sourceNode.end);
         if (!edge) {
           mergeMermaidNode(diagram, sourceNode);
+          addMermaidNodesToGroups(diagram, [sourceNode.id], activeGroups);
           continue;
         }
 
@@ -2395,6 +2423,7 @@ ${markdownToHtml(editor.value)}
         if (!targetNode) continue;
         mergeMermaidNode(diagram, sourceNode);
         mergeMermaidNode(diagram, targetNode);
+        addMermaidNodesToGroups(diagram, [sourceNode.id, targetNode.id], activeGroups);
         diagram.edges.push({
           from: sourceNode.id,
           to: targetNode.id,
@@ -2407,6 +2436,30 @@ ${markdownToHtml(editor.value)}
       return diagram;
     }
 
+    function readMermaidSubgraph(line, fallbackIndex) {
+      const match = line.match(/^subgraph\s+(.+)$/i);
+      if (!match) return null;
+
+      const source = match[1].trim();
+      const explicit = source.match(/^([A-Za-z0-9_-]+)\s*[\[\(\{](.*)[\]\)\}]\s*$/);
+      if (explicit) {
+        return {
+          id: explicit[1],
+          label: normalizeMermaidLabel(explicit[2]) || explicit[1],
+          nodeIds: new Set(),
+          parentId: ""
+        };
+      }
+
+      const id = /^[A-Za-z0-9_-]+$/.test(source) ? source : `subgraph_${fallbackIndex}`;
+      return {
+        id,
+        label: normalizeMermaidLabel(source) || id,
+        nodeIds: new Set(),
+        parentId: ""
+      };
+    }
+
     function parseMermaidStyle(styleText) {
       const style = {};
       styleText.split(",").forEach((part) => {
@@ -2417,6 +2470,15 @@ ${markdownToHtml(editor.value)}
         if (["fill", "stroke", "color"].includes(key)) style[key] = value;
       });
       return style;
+    }
+
+    function addMermaidNodesToGroups(diagram, nodeIds, activeGroups) {
+      if (!activeGroups.length) return;
+      activeGroups.forEach((groupId) => {
+        const group = diagram.groups.get(groupId);
+        if (!group) return;
+        nodeIds.forEach((id) => group.nodeIds.add(id));
+      });
     }
 
     function readMermaidNodeToken(text, start) {
@@ -2438,7 +2500,7 @@ ${markdownToHtml(editor.value)}
           if (text[index] === closer) depth -= 1;
           if (depth > 0) index += 1;
         }
-        label = text.slice(labelStart, index);
+        label = normalizeMermaidLabel(text.slice(labelStart, index));
         if (text[index] === closer) index += 1;
       }
 
@@ -2485,7 +2547,7 @@ ${markdownToHtml(editor.value)}
 
     function ensureMermaidNode(diagram, id) {
       if (!diagram.nodes.has(id)) {
-        diagram.nodes.set(id, { id, label: id, className: "" });
+        diagram.nodes.set(id, { id, label: id, className: "", style: {} });
         diagram.order.push(id);
       }
       return diagram.nodes.get(id);
@@ -2493,6 +2555,7 @@ ${markdownToHtml(editor.value)}
 
     function renderFlowchartSvg(diagram) {
       const layout = layoutMermaidFlowchart(diagram);
+      const groupFrames = layout.groups.map(renderMermaidGroup).join("");
       const edgePaths = diagram.edges.map((edge, index) => renderMermaidEdge(edge, index, layout)).join("");
       const nodeGroups = layout.nodes.map((node) => renderMermaidNode(node, diagram.classDefs)).join("");
 
@@ -2502,6 +2565,7 @@ ${markdownToHtml(editor.value)}
     <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f5e5a"></path>
   </marker>
 </defs>
+${groupFrames}
 ${edgePaths}
 ${nodeGroups}
 </svg></figure>`;
@@ -2549,12 +2613,91 @@ ${nodeGroups}
 
       const nodes = rows.flat();
       const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+      const groups = layoutMermaidGroups(diagram, nodeMap);
+      const outerPadding = 8;
+      const minX = Math.min(...nodes.map((node) => node.x), ...groups.map((group) => group.x), 0);
+      const minY = Math.min(...nodes.map((node) => node.y), ...groups.map((group) => group.y), 0);
+      const maxX = Math.max(...nodes.map((node) => node.x + node.width), ...groups.map((group) => group.x + group.width), canvasWidth);
+      const maxY = Math.max(...nodes.map((node) => node.y + node.height), ...groups.map((group) => group.y + group.height), canvasHeight);
+      const offsetX = minX < outerPadding ? outerPadding - minX : 0;
+      const offsetY = minY < outerPadding ? outerPadding - minY : 0;
+      if (offsetX || offsetY) {
+        nodes.forEach((node) => {
+          node.x += offsetX;
+          node.y += offsetY;
+        });
+        groups.forEach((group) => {
+          group.x += offsetX;
+          group.y += offsetY;
+        });
+      }
       return {
-        width: Math.round(canvasWidth),
-        height: Math.round(canvasHeight),
+        width: Math.round(Math.max(canvasWidth + offsetX, maxX + offsetX + outerPadding)),
+        height: Math.round(Math.max(canvasHeight + offsetY, maxY + offsetY + outerPadding)),
         nodes,
-        nodeMap
+        nodeMap,
+        groups
       };
+    }
+
+    function layoutMermaidGroups(diagram, nodeMap) {
+      const layouts = new Map();
+      [...diagram.groupOrder].reverse().forEach((id) => {
+        const group = diagram.groups.get(id);
+        if (!group) return;
+
+        const nodeBoxes = [...group.nodeIds]
+          .map((nodeId) => nodeMap.get(nodeId))
+          .filter(Boolean)
+          .map((node) => ({
+            x: node.x,
+            y: node.y,
+            width: node.width,
+            height: node.height
+          }));
+        const childBoxes = [...layouts.values()]
+          .filter((child) => child.parentId === id)
+          .map((child) => ({
+            x: child.x,
+            y: child.y,
+            width: child.width,
+            height: child.height
+          }));
+        const boxes = [...nodeBoxes, ...childBoxes];
+        if (!boxes.length) return;
+
+        let lines = mermaidLabelLines(group.label);
+        if (!lines.length) lines = [group.id];
+        const minX = Math.min(...boxes.map((box) => box.x));
+        const minY = Math.min(...boxes.map((box) => box.y));
+        const maxX = Math.max(...boxes.map((box) => box.x + box.width));
+        const maxY = Math.max(...boxes.map((box) => box.y + box.height));
+        const labelWidth = Math.max(...lines.map(estimateTextWidth)) + 28;
+        const labelHeight = Math.max(24, lines.length * 18 + 8);
+        const paddingX = 18;
+        const paddingBottom = 16;
+        const paddingTop = labelHeight + 12;
+        let x = minX - paddingX;
+        let width = maxX - minX + paddingX * 2;
+
+        if (labelWidth > width) {
+          const extraWidth = labelWidth - width;
+          x -= extraWidth / 2;
+          width = labelWidth;
+        }
+
+        layouts.set(id, {
+          id,
+          parentId: group.parentId,
+          lines,
+          x,
+          y: minY - paddingTop,
+          width,
+          height: maxY - minY + paddingTop + paddingBottom
+        });
+      });
+
+      return diagram.groupOrder.map((id) => layouts.get(id)).filter(Boolean);
     }
 
     function assignMermaidLevels(diagram) {
@@ -2591,7 +2734,7 @@ ${nodeGroups}
     }
 
     function renderMermaidNode(node, classDefs) {
-      const style = classDefs.get(node.className) || {};
+      const style = { ...(classDefs.get(node.className) || {}), ...(node.style || {}) };
       const fill = safeMermaidColor(style.fill, "#fffdf8");
       const stroke = safeMermaidColor(style.stroke, "#5f5e5a");
       const color = safeMermaidColor(style.color, "#2c2c2a");
@@ -2603,6 +2746,17 @@ ${nodeGroups}
       return `<g>
 <rect x="${node.x}" y="${node.y}" width="${node.width}" height="${node.height}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="2"></rect>
 <text text-anchor="middle" dominant-baseline="middle" fill="${color}" font-size="13" font-weight="650">${lines}</text>
+</g>`;
+    }
+
+    function renderMermaidGroup(group) {
+      const label = group.lines.map((line, index) => {
+        return `<tspan x="${group.x + 14}" y="${group.y + 18 + index * 18}">${escapeHtml(line)}</tspan>`;
+      }).join("");
+
+      return `<g>
+<rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" rx="8" fill="#f7fbf6" stroke="#b9c7bf" stroke-width="1.5"></rect>
+<text text-anchor="start" fill="#3b5951" font-size="12" font-weight="700">${label}</text>
 </g>`;
     }
 
@@ -2651,11 +2805,21 @@ ${nodeGroups}
     }
 
     function mermaidLabelLines(label) {
-      return String(label || "")
+      return normalizeMermaidLabel(label)
         .replace(/<br\s*\/?>/gi, "\n")
         .split(/\n+/)
         .map((line) => line.trim())
         .filter(Boolean);
+    }
+
+    function normalizeMermaidLabel(label) {
+      let value = String(label || "").trim();
+      const first = value[0];
+      const last = value[value.length - 1];
+      if ((first === "\"" && last === "\"") || (first === "'" && last === "'")) {
+        value = value.slice(1, -1);
+      }
+      return value.replace(/\\"/g, "\"").replace(/\\'/g, "'");
     }
 
     function estimateTextWidth(text) {
