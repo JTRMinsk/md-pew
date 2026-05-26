@@ -94,7 +94,7 @@
 
     .app {
       display: grid;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto 1fr auto auto;
       height: 100%;
       padding: 14px;
       gap: 12px;
@@ -319,6 +319,7 @@
       max-width: 100%;
       height: auto;
       border-radius: var(--radius);
+      cursor: zoom-in;
     }
 
     .preview .mermaid-diagram {
@@ -405,6 +406,334 @@
       display: grid;
     }
 
+    .image-viewer {
+      position: fixed;
+      inset: 0;
+      display: none;
+      grid-template-rows: auto 1fr auto;
+      z-index: 20;
+      background: rgba(31, 36, 32, 0.88);
+      color: #fffdf8;
+    }
+
+    .image-viewer.visible {
+      display: grid;
+    }
+
+    .image-viewer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      min-width: 0;
+      padding: 12px 14px;
+      background: rgba(18, 79, 84, 0.72);
+      backdrop-filter: blur(14px);
+    }
+
+    .image-viewer-caption {
+      flex: 1 1 220px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+    }
+
+    .image-viewer-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+
+    .image-viewer-controls button {
+      min-height: 32px;
+      border-color: rgba(255, 253, 248, 0.34);
+      background: rgba(255, 253, 248, 0.12);
+      color: #fffdf8;
+    }
+
+    .image-viewer-controls button:hover {
+      border-color: rgba(255, 253, 248, 0.8);
+      background: rgba(255, 253, 248, 0.2);
+    }
+
+    .image-viewer-zoom {
+      min-width: 52px;
+      text-align: center;
+      font: 13px/1.2 "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    }
+
+    .image-viewer-stage {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .image-viewer-stage.dragging {
+      cursor: grabbing;
+    }
+
+    .image-viewer-stage img {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      max-width: none;
+      max-height: none;
+      border-radius: 6px;
+      box-shadow: 0 24px 72px rgba(0, 0, 0, 0.42);
+      transform: translate(-50%, -50%) scale(1);
+      transform-origin: center;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .image-viewer-hint {
+      padding: 10px 14px;
+      color: rgba(255, 253, 248, 0.7);
+      font-size: 12px;
+      text-align: center;
+      background: rgba(31, 36, 32, 0.44);
+    }
+
+    .export-stage {
+      position: fixed;
+      top: 0;
+      left: -100000px;
+      width: 1200px;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .export-page {
+      width: 1200px;
+      min-height: 1600px;
+      padding: 72px;
+      background: var(--panel);
+      color: var(--ink);
+      font: 22px/1.75 Georgia, "Times New Roman", serif;
+    }
+
+    .export-page > *:first-child {
+      margin-top: 0;
+    }
+
+    .export-page h1,
+    .export-page h2,
+    .export-page h3,
+    .export-page h4,
+    .export-page h5,
+    .export-page h6 {
+      line-height: 1.22;
+      margin: 1.45em 0 0.52em;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .export-page h1 {
+      font-size: 48px;
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.22em;
+    }
+
+    .export-page h2 {
+      font-size: 34px;
+    }
+
+    .export-page h3 {
+      font-size: 26px;
+    }
+
+    .export-page p,
+    .export-page ul,
+    .export-page ol,
+    .export-page blockquote,
+    .export-page table,
+    .export-page pre,
+    .export-page .mermaid-diagram {
+      margin: 0 0 1.05em;
+    }
+
+    .export-page code {
+      background: rgba(29, 109, 115, 0.12);
+      border: 1px solid rgba(29, 109, 115, 0.2);
+      border-radius: 5px;
+      padding: 0.08em 0.32em;
+      font: 0.92em/1.5 "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    }
+
+    .export-page pre {
+      overflow: visible;
+      padding: 16px 18px;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      border-radius: var(--radius);
+    }
+
+    .export-page pre code {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    .export-page blockquote {
+      border-left: 4px solid var(--accent);
+      padding: 0.15em 0 0.15em 1em;
+      color: #4e554f;
+      background: rgba(220, 239, 240, 0.58);
+    }
+
+    .export-page table {
+      min-width: 100%;
+      width: max-content;
+      border-collapse: collapse;
+    }
+
+    .export-page th,
+    .export-page td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .export-page th {
+      background: rgba(29, 109, 115, 0.12);
+    }
+
+    .export-page img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius);
+    }
+
+    .export-measure {
+      min-height: 0;
+    }
+
+    .export-measure img {
+      max-width: none;
+    }
+
+    .export-page .mermaid-diagram {
+      width: fit-content;
+      max-width: 100%;
+      max-height: none;
+      overflow: visible;
+      padding: 14px;
+      background: rgba(255, 253, 248, 0.78);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .export-page .mermaid-toggle {
+      display: none;
+    }
+
+    .export-page .mermaid-diagram svg {
+      display: block;
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, sans-serif;
+    }
+
+    .export-measure .mermaid-diagram,
+    .export-measure .mermaid-diagram svg {
+      max-width: none;
+    }
+
+    .export-standalone {
+      min-height: 0;
+    }
+
+    .export-item-title {
+      margin: 0 0 22px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--accent);
+      color: var(--accent-strong);
+      font: 760 32px/1.25 ui-serif, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    }
+
+    .export-image-placeholder {
+      display: grid;
+      gap: 8px;
+      min-height: 180px;
+      align-content: center;
+      padding: 24px;
+      border: 2px dashed rgba(29, 109, 115, 0.42);
+      border-radius: var(--radius);
+      background: rgba(220, 239, 240, 0.48);
+      color: var(--accent-strong);
+    }
+
+    .export-image-placeholder strong {
+      font-size: 20px;
+      line-height: 1.35;
+    }
+
+    .export-image-placeholder span {
+      overflow-wrap: anywhere;
+      color: #4e554f;
+      font: 14px/1.45 "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    }
+
+    .export-tray {
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px;
+      background: rgba(255, 253, 248, 0.94);
+      border: 1px solid rgba(217, 212, 200, 0.95);
+      border-radius: var(--radius);
+      box-shadow: 0 10px 28px rgba(31, 36, 32, 0.1);
+    }
+
+    .export-tray[hidden] {
+      display: none;
+    }
+
+    .export-tray-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--accent-strong);
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .export-tray-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .export-tray-list a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      max-width: 100%;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--accent-strong);
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .export-tray-list a:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
     .workspace[data-view="edit"] {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -479,6 +808,7 @@
         <button id="saveButton" type="button" class="primary">保存</button>
         <button id="downloadButton" type="button">下载</button>
         <button id="exportButton" type="button">导出 HTML</button>
+        <button id="exportImagesButton" type="button">导出图片</button>
       </div>
     </header>
 
@@ -491,6 +821,14 @@
       </section>
     </main>
 
+    <section id="exportTray" class="export-tray" aria-live="polite" hidden>
+      <div class="export-tray-header">
+        <span id="exportTrayTitle">图片已生成</span>
+        <button id="exportTrayClose" type="button">清除</button>
+      </div>
+      <div id="exportTrayList" class="export-tray-list"></div>
+    </section>
+
     <footer class="statusbar">
       <span id="status">就绪</span>
       <span id="stats">0 词 · 0 字符</span>
@@ -498,6 +836,24 @@
   </div>
 
   <div id="dropMask" class="drop-mask">释放打开 Markdown</div>
+  <div id="imageViewer" class="image-viewer" role="dialog" aria-modal="true" aria-label="图片预览">
+    <div class="image-viewer-bar">
+      <div id="imageViewerCaption" class="image-viewer-caption"></div>
+      <div class="image-viewer-controls">
+        <button id="imageZoomOut" type="button" aria-label="缩小">-</button>
+        <span id="imageViewerZoom" class="image-viewer-zoom">100%</span>
+        <button id="imageZoomIn" type="button" aria-label="放大">+</button>
+        <button id="imageZoomFit" type="button">适应</button>
+        <button id="imageZoomActual" type="button">100%</button>
+        <button id="imageViewerClose" type="button">关闭</button>
+      </div>
+    </div>
+    <div id="imageViewerStage" class="image-viewer-stage">
+      <img id="imageViewerImage" alt="">
+    </div>
+    <div class="image-viewer-hint">滚轮缩放，拖动查看细节，Esc 关闭</div>
+  </div>
+  <div id="exportStage" class="export-stage" aria-hidden="true"></div>
   <input id="fileInput" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
 
   <script>
@@ -510,6 +866,16 @@
     const dropMask = document.getElementById("dropMask");
     const fileInput = document.getElementById("fileInput");
     const workspace = document.getElementById("workspace");
+    const imageViewer = document.getElementById("imageViewer");
+    const imageViewerStage = document.getElementById("imageViewerStage");
+    const imageViewerImage = document.getElementById("imageViewerImage");
+    const imageViewerCaption = document.getElementById("imageViewerCaption");
+    const imageViewerZoom = document.getElementById("imageViewerZoom");
+    const exportStage = document.getElementById("exportStage");
+    const exportImagesButton = document.getElementById("exportImagesButton");
+    const exportTray = document.getElementById("exportTray");
+    const exportTrayTitle = document.getElementById("exportTrayTitle");
+    const exportTrayList = document.getElementById("exportTrayList");
 
     let activeFileHandle = null;
     let activeFileName = "untitled.md";
@@ -517,6 +883,19 @@
     let currentView = "split";
     let dragDepth = 0;
     let renderTimer = 0;
+    let imageViewerScale = 1;
+    let imageViewerX = 0;
+    let imageViewerY = 0;
+    let imageViewerDragging = false;
+    let imageViewerDragStart = { x: 0, y: 0, offsetX: 0, offsetY: 0 };
+    let exportDownloadUrls = [];
+
+    const exportConfig = {
+      pageWidth: 1200,
+      pageHeight: 1600,
+      padding: 72,
+      maxCanvasSide: 10000
+    };
 
     const starterMarkdown = `# 一页笔记
 
@@ -547,6 +926,13 @@ console.log(message);
     document.getElementById("saveButton").addEventListener("click", saveFile);
     document.getElementById("downloadButton").addEventListener("click", downloadMarkdown);
     document.getElementById("exportButton").addEventListener("click", exportHtml);
+    exportImagesButton.addEventListener("click", exportImages);
+    document.getElementById("imageZoomOut").addEventListener("click", () => zoomImageViewer(1 / 1.2));
+    document.getElementById("imageZoomIn").addEventListener("click", () => zoomImageViewer(1.2));
+    document.getElementById("imageZoomFit").addEventListener("click", fitImageViewer);
+    document.getElementById("imageZoomActual").addEventListener("click", () => setImageViewerScale(1));
+    document.getElementById("imageViewerClose").addEventListener("click", closeImageViewer);
+    document.getElementById("exportTrayClose").addEventListener("click", clearExportDownloads);
     fileInput.addEventListener("change", handleInputFile);
 
     document.querySelectorAll("[data-view-button]").forEach((button) => {
@@ -568,11 +954,45 @@ console.log(message);
     });
 
     window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && imageViewer.classList.contains("visible")) {
+        closeImageViewer();
+        return;
+      }
+
       const isSave = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s";
       if (!isSave) return;
       event.preventDefault();
       saveFile();
     });
+
+    imageViewerStage.addEventListener("wheel", (event) => {
+      if (!imageViewer.classList.contains("visible")) return;
+      event.preventDefault();
+      zoomImageViewer(event.deltaY > 0 ? 1 / 1.12 : 1.12);
+    }, { passive: false });
+
+    imageViewerStage.addEventListener("pointerdown", (event) => {
+      if (!imageViewer.classList.contains("visible")) return;
+      imageViewerDragging = true;
+      imageViewerStage.classList.add("dragging");
+      imageViewerStage.setPointerCapture(event.pointerId);
+      imageViewerDragStart = {
+        x: event.clientX,
+        y: event.clientY,
+        offsetX: imageViewerX,
+        offsetY: imageViewerY
+      };
+    });
+
+    imageViewerStage.addEventListener("pointermove", (event) => {
+      if (!imageViewerDragging) return;
+      imageViewerX = imageViewerDragStart.offsetX + event.clientX - imageViewerDragStart.x;
+      imageViewerY = imageViewerDragStart.offsetY + event.clientY - imageViewerDragStart.y;
+      applyImageViewerTransform();
+    });
+
+    imageViewerStage.addEventListener("pointerup", endImageViewerDrag);
+    imageViewerStage.addEventListener("pointercancel", endImageViewerDrag);
 
     window.addEventListener("dragenter", (event) => {
       if (!hasFiles(event)) return;
@@ -747,9 +1167,927 @@ ${markdownToHtml(editor.value)}
       updateMeta("已导出 HTML");
     }
 
+    async function exportImages() {
+      const originalLabel = exportImagesButton.textContent;
+
+      exportImagesButton.disabled = true;
+      exportImagesButton.textContent = "导出中";
+      exportStage.innerHTML = "";
+      clearExportDownloads();
+      updateMeta("正在生成图片");
+
+      try {
+        const measureDoc = createExportDocument("export-page export-measure");
+        exportStage.appendChild(measureDoc);
+        await waitForExportAssets(measureDoc);
+
+        const oversizedItems = findOversizedExportItems(measureDoc);
+        const oversizedSources = new Set(oversizedItems.map((item) => item.source));
+        const pages = buildExportPages(measureDoc, oversizedSources);
+        const standaloneItems = oversizedItems.map(createStandaloneExportNode);
+        standaloneItems.forEach((item) => exportStage.appendChild(item.node));
+
+        const imagePrep = await prepareExportImages(exportStage);
+        await prepareExportDiagrams(exportStage);
+        await waitForExportAssets(exportStage);
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+
+        const baseName = exportBaseName();
+        const outputs = [];
+
+        for (let index = 0; index < pages.length; index += 1) {
+          const fileName = `${baseName}-${String(index + 1).padStart(2, "0")}.png`;
+          outputs.push({
+            fileName,
+            blob: await renderElementToPngBlob(pages[index])
+          });
+          updateMeta(`已生成 ${outputs.length} 张图片`);
+        }
+
+        for (let index = 0; index < standaloneItems.length; index += 1) {
+          const item = standaloneItems[index];
+          const fileName = `${baseName}-${String(pages.length + index + 1).padStart(2, "0")}-${item.namePart}.png`;
+          outputs.push({
+            fileName,
+            blob: await renderElementToPngBlob(item.node)
+          });
+          updateMeta(`已生成 ${outputs.length} 张图片`);
+        }
+
+        if (!outputs.length) throw new Error("没有可导出的预览内容");
+
+        const downloads = outputs.length > 1
+          ? [{
+              fileName: `${baseName}-images.zip`,
+              blob: await createZipArchive(outputs, `${baseName}-images`)
+            }]
+          : outputs;
+        const title = outputs.length > 1
+          ? `已生成 ${outputs.length} 张图片，已打包为 ZIP`
+          : "已生成 1 张图片";
+
+        showExportDownloads(downloads, title);
+        startDefaultDownloads();
+        const replacedMessage = imagePrep.replaced ? `，${imagePrep.replaced} 张外链图已用占位框替代` : "";
+        updateMeta(outputs.length > 1
+          ? `已发送 ZIP 到浏览器默认下载目录${replacedMessage}`
+          : `已发送 1 张图片到浏览器默认下载目录${replacedMessage}`);
+      } catch (error) {
+        showError(new Error(`导出图片失败：${friendlyExportError(error)}`));
+      } finally {
+        exportStage.innerHTML = "";
+        exportImagesButton.disabled = false;
+        exportImagesButton.textContent = originalLabel;
+      }
+    }
+
+    function showExportDownloads(outputs, title) {
+      clearExportDownloads();
+      exportTrayTitle.textContent = title;
+
+      outputs.forEach((output) => {
+        const url = URL.createObjectURL(output.blob);
+        exportDownloadUrls.push(url);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = output.fileName;
+        link.textContent = output.fileName;
+        exportTrayList.appendChild(link);
+      });
+
+      exportTray.hidden = false;
+    }
+
+    function startDefaultDownloads() {
+      Array.from(exportTrayList.querySelectorAll("a")).forEach((link, index) => {
+        window.setTimeout(() => link.click(), index * 120);
+      });
+    }
+
+    async function createZipArchive(outputs, folderName) {
+      const encoder = new TextEncoder();
+      const entries = [{
+        name: `${folderName}/`,
+        bytes: new Uint8Array(),
+        directory: true
+      }];
+
+      for (const output of outputs) {
+        entries.push({
+          name: `${folderName}/${output.fileName}`,
+          bytes: new Uint8Array(await output.blob.arrayBuffer()),
+          directory: false
+        });
+      }
+
+      const chunks = [];
+      const centralChunks = [];
+      let offset = 0;
+
+      entries.forEach((entry) => {
+        const nameBytes = encoder.encode(entry.name);
+        const crc = entry.directory ? 0 : crc32(entry.bytes);
+        const localHeader = createZipLocalHeader(nameBytes, entry.bytes.length, crc);
+
+        chunks.push(localHeader, nameBytes, entry.bytes);
+        centralChunks.push(createZipCentralHeader(nameBytes, entry.bytes.length, crc, offset, entry.directory), nameBytes);
+        offset += localHeader.length + nameBytes.length + entry.bytes.length;
+      });
+
+      const centralSize = centralChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const endRecord = createZipEndRecord(entries.length, centralSize, offset);
+      return new Blob([...chunks, ...centralChunks, endRecord], { type: "application/zip" });
+    }
+
+    function createZipLocalHeader(nameBytes, size, crc) {
+      const header = new Uint8Array(30);
+      const view = new DataView(header.buffer);
+      const time = zipDosTime(new Date());
+
+      view.setUint32(0, 0x04034b50, true);
+      view.setUint16(4, 20, true);
+      view.setUint16(6, 0x0800, true);
+      view.setUint16(8, 0, true);
+      view.setUint16(10, time.time, true);
+      view.setUint16(12, time.date, true);
+      view.setUint32(14, crc, true);
+      view.setUint32(18, size, true);
+      view.setUint32(22, size, true);
+      view.setUint16(26, nameBytes.length, true);
+      view.setUint16(28, 0, true);
+      return header;
+    }
+
+    function createZipCentralHeader(nameBytes, size, crc, offset, directory) {
+      const header = new Uint8Array(46);
+      const view = new DataView(header.buffer);
+      const time = zipDosTime(new Date());
+
+      view.setUint32(0, 0x02014b50, true);
+      view.setUint16(4, 20, true);
+      view.setUint16(6, 20, true);
+      view.setUint16(8, 0x0800, true);
+      view.setUint16(10, 0, true);
+      view.setUint16(12, time.time, true);
+      view.setUint16(14, time.date, true);
+      view.setUint32(16, crc, true);
+      view.setUint32(20, size, true);
+      view.setUint32(24, size, true);
+      view.setUint16(28, nameBytes.length, true);
+      view.setUint16(30, 0, true);
+      view.setUint16(32, 0, true);
+      view.setUint16(34, 0, true);
+      view.setUint16(36, 0, true);
+      view.setUint32(38, directory ? 0x10 : 0, true);
+      view.setUint32(42, offset, true);
+      return header;
+    }
+
+    function createZipEndRecord(entryCount, centralSize, centralOffset) {
+      const record = new Uint8Array(22);
+      const view = new DataView(record.buffer);
+
+      view.setUint32(0, 0x06054b50, true);
+      view.setUint16(4, 0, true);
+      view.setUint16(6, 0, true);
+      view.setUint16(8, entryCount, true);
+      view.setUint16(10, entryCount, true);
+      view.setUint32(12, centralSize, true);
+      view.setUint32(16, centralOffset, true);
+      view.setUint16(20, 0, true);
+      return record;
+    }
+
+    function zipDosTime(date) {
+      return {
+        time: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+        date: ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()
+      };
+    }
+
+    function crc32(bytes) {
+      let crc = -1;
+      for (let index = 0; index < bytes.length; index += 1) {
+        crc = (crc >>> 8) ^ crc32Table()[(crc ^ bytes[index]) & 0xff];
+      }
+      return (crc ^ -1) >>> 0;
+    }
+
+    function crc32Table() {
+      if (crc32Table.cache) return crc32Table.cache;
+
+      crc32Table.cache = Array.from({ length: 256 }, (_, index) => {
+        let value = index;
+        for (let bit = 0; bit < 8; bit += 1) {
+          value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+        }
+        return value >>> 0;
+      });
+
+      return crc32Table.cache;
+    }
+
+    function clearExportDownloads() {
+      exportDownloadUrls.forEach((url) => URL.revokeObjectURL(url));
+      exportDownloadUrls = [];
+      exportTrayList.innerHTML = "";
+      exportTray.hidden = true;
+    }
+
+    function createExportDocument(className) {
+      const article = document.createElement("article");
+      article.className = className;
+      article.innerHTML = markdownToHtml(editor.value);
+      sanitizeExportNode(article);
+      return article;
+    }
+
+    function sanitizeExportNode(node) {
+      getElementsIncludingSelf(node, ".mermaid-toggle").forEach((button) => button.remove());
+      getElementsIncludingSelf(node, ".mermaid-diagram").forEach((diagram) => {
+        diagram.classList.remove("expanded", "has-overflow");
+      });
+      getElementsIncludingSelf(node, "img").forEach((image) => {
+        if (image.src) image.setAttribute("src", image.src);
+        image.removeAttribute("tabindex");
+        image.style.cursor = "";
+      });
+    }
+
+    function getElementsIncludingSelf(node, selector) {
+      const elements = [];
+      if (node.matches && node.matches(selector)) elements.push(node);
+      elements.push(...Array.from(node.querySelectorAll(selector)));
+      return elements;
+    }
+
+    function findOversizedExportItems(documentNode) {
+      const contentWidth = exportConfig.pageWidth - exportConfig.padding * 2;
+      const items = [];
+      const sources = new Set();
+
+      const addItem = (source, type, target, width) => {
+        if (!source || sources.has(source) || width <= contentWidth + 2) return;
+        sources.add(source);
+        const title = inferExportTitle(source, type, target) || `${exportTypeLabel(type)} ${items.length + 1}`;
+        items.push({ source, type, target, width: Math.ceil(width), title });
+      };
+
+      Array.from(documentNode.querySelectorAll("img")).forEach((image) => {
+        const source = topLevelExportElement(image, documentNode);
+        const rect = image.getBoundingClientRect();
+        const width = Math.max(image.naturalWidth || 0, image.scrollWidth || 0, rect.width || 0);
+        addItem(source, "image", image, width);
+      });
+
+      Array.from(documentNode.querySelectorAll("table")).forEach((table) => {
+        const source = topLevelExportElement(table, documentNode);
+        const rect = table.getBoundingClientRect();
+        const width = Math.max(table.scrollWidth || 0, rect.width || 0);
+        addItem(source, "table", table, width);
+      });
+
+      Array.from(documentNode.querySelectorAll(".mermaid-diagram")).forEach((diagram) => {
+        const source = topLevelExportElement(diagram, documentNode);
+        const svg = diagram.querySelector("svg");
+        const rect = (svg || diagram).getBoundingClientRect();
+        const width = Math.max(Number(svg && svg.getAttribute("width")) || 0, diagram.scrollWidth || 0, rect.width || 0);
+        addItem(source, "diagram", diagram, width);
+      });
+
+      return items;
+    }
+
+    function topLevelExportElement(element, root) {
+      let current = element;
+      while (current && current.parentElement && current.parentElement !== root) {
+        current = current.parentElement;
+      }
+      return current || element;
+    }
+
+    function inferExportTitle(source, type, target) {
+      if (type === "image" && target.alt) return target.alt.trim();
+
+      const caption = previousCaptionText(source, type);
+      if (caption) return caption;
+
+      const heading = previousHeadingText(source);
+      if (heading) return heading;
+
+      return "";
+    }
+
+    function previousCaptionText(source, type) {
+      const patterns = {
+        image: /^(?:图|figure)\s*[\w.-]*\s*[:：.、-]?\s*\S/i,
+        table: /^(?:表|table)\s*[\w.-]*\s*[:：.、-]?\s*\S/i,
+        diagram: /^(?:图|figure|diagram)\s*[\w.-]*\s*[:：.、-]?\s*\S/i
+      };
+      let current = source.previousElementSibling;
+
+      while (current) {
+        const text = compactText(current);
+        if (text && text.length <= 140 && patterns[type].test(text)) return text;
+        if (text || /^H[1-6]$/i.test(current.tagName)) return "";
+        current = current.previousElementSibling;
+      }
+
+      return "";
+    }
+
+    function previousHeadingText(source) {
+      let current = source.previousElementSibling;
+      while (current) {
+        if (/^H[1-6]$/i.test(current.tagName)) return compactText(current);
+        current = current.previousElementSibling;
+      }
+      return "";
+    }
+
+    function compactText(element) {
+      return (element.textContent || "").replace(/\s+/g, " ").trim();
+    }
+
+    function exportTypeLabel(type) {
+      if (type === "table") return "表";
+      if (type === "diagram") return "图";
+      return "图片";
+    }
+
+    function buildExportPages(sourceDoc, oversizedSources) {
+      const pages = [];
+      let page = createExportPage();
+      exportStage.appendChild(page);
+
+      Array.from(sourceDoc.children).forEach((child) => {
+        if (oversizedSources.has(child)) return;
+        const clone = child.cloneNode(true);
+        sanitizeExportNode(clone);
+        page.appendChild(clone);
+
+        if (page.scrollHeight > exportConfig.pageHeight + 1 && page.children.length > 1) {
+          page.removeChild(clone);
+          pages.push(page);
+          page = createExportPage();
+          exportStage.appendChild(page);
+          page.appendChild(clone);
+        }
+      });
+
+      if (page.children.length || !pages.length) pages.push(page);
+      return pages;
+    }
+
+    function createExportPage() {
+      const page = document.createElement("section");
+      page.className = "export-page";
+      return page;
+    }
+
+    function createStandaloneExportNode(item, index) {
+      const node = createExportPage();
+      const width = Math.max(exportConfig.pageWidth, Math.ceil(item.width + exportConfig.padding * 2));
+      node.classList.add("export-standalone");
+      node.style.width = `${Math.min(width, exportConfig.maxCanvasSide)}px`;
+
+      const title = document.createElement("h2");
+      title.className = "export-item-title";
+      title.textContent = item.title || `${exportTypeLabel(item.type)} ${index + 1}`;
+      node.appendChild(title);
+
+      const content = item.source.cloneNode(true);
+      sanitizeExportNode(content);
+      node.appendChild(content);
+
+      return {
+        node,
+        namePart: safeFilePart(title.textContent) || `${exportTypeLabel(item.type)}-${index + 1}`
+      };
+    }
+
+    async function waitForExportAssets(root) {
+      const imagePromises = Array.from(root.querySelectorAll("img")).map((image) => {
+        if (!image.src || image.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          image.addEventListener("load", resolve, { once: true });
+          image.addEventListener("error", resolve, { once: true });
+        });
+      });
+
+      await Promise.all(imagePromises);
+    }
+
+    async function prepareExportImages(root) {
+      const result = { inlined: 0, replaced: 0 };
+      const images = Array.from(root.querySelectorAll("img"));
+
+      for (const image of images) {
+        try {
+          const dataUrl = await exportImageToDataUrl(image);
+          image.setAttribute("src", dataUrl);
+          image.removeAttribute("srcset");
+          result.inlined += 1;
+        } catch (_) {
+          image.replaceWith(createExportImagePlaceholder(image));
+          result.replaced += 1;
+        }
+      }
+
+      return result;
+    }
+
+    async function prepareExportDiagrams(root) {
+      const diagrams = Array.from(root.querySelectorAll(".mermaid-diagram"));
+
+      for (const diagram of diagrams) {
+        const svg = diagram.querySelector("svg");
+        if (!svg) continue;
+
+        try {
+          const serialized = new XMLSerializer().serializeToString(svg);
+          const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`;
+          const image = document.createElement("img");
+          image.className = "export-diagram-image";
+          image.src = source;
+          image.alt = "Mermaid diagram";
+          diagram.replaceWith(image);
+        } catch (_) {
+          const placeholder = document.createElement("div");
+          placeholder.className = "export-image-placeholder";
+          placeholder.innerHTML = "<strong>图表未嵌入</strong><span>浏览器未能准备此 Mermaid 图。</span>";
+          diagram.replaceWith(placeholder);
+        }
+      }
+    }
+
+    async function exportImageToDataUrl(image) {
+      const source = image.currentSrc || image.src || image.getAttribute("src") || "";
+      if (!source) throw new Error("图片地址为空");
+      if (/^data:image\//i.test(source)) return source;
+
+      try {
+        const response = await fetch(source, { mode: "cors", credentials: "omit" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        if (!/^image\//i.test(blob.type || "")) throw new Error("不是图片资源");
+        return await blobToDataUrl(blob);
+      } catch (_) {
+        return imageElementToDataUrl(image);
+      }
+    }
+
+    function imageElementToDataUrl(image) {
+      const width = image.naturalWidth || image.width;
+      const height = image.naturalHeight || image.height;
+      if (!width || !height) throw new Error("图片尚未加载");
+      if (width > exportConfig.maxCanvasSide || height > exportConfig.maxCanvasSide) {
+        throw new Error("图片尺寸过大，无法安全内嵌");
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0, width, height);
+      return canvas.toDataURL("image/png");
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(reader.error || new Error("图片读取失败"));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function createExportImagePlaceholder(image) {
+      const placeholder = document.createElement("div");
+      placeholder.className = "export-image-placeholder";
+
+      const title = document.createElement("strong");
+      title.textContent = image.alt || "外部图片未嵌入";
+
+      const source = document.createElement("span");
+      source.textContent = image.currentSrc || image.src || image.getAttribute("src") || "未知来源";
+
+      const note = document.createElement("span");
+      note.textContent = "浏览器安全策略阻止读取此图片，导出时已保留图片名称和来源。";
+
+      placeholder.append(title, source, note);
+      return placeholder;
+    }
+
+    async function renderElementToPngBlob(element, retriedSecurityFallback = false) {
+      await waitForExportAssets(element);
+
+      const rect = element.getBoundingClientRect();
+      const width = Math.ceil(Math.max(element.scrollWidth || 0, rect.width || 0, exportConfig.pageWidth));
+      if (!width) throw new Error("导出内容尺寸为空");
+      if (width > exportConfig.maxCanvasSide) throw new Error(`单张图片过宽（${width}px）`);
+
+      const measureCanvas = document.createElement("canvas");
+      const measureContext = measureCanvas.getContext("2d");
+      const measuredHeight = Math.ceil(drawExportElement(measureContext, element, width, true));
+      const height = Math.ceil(Math.max(measuredHeight, element.classList.contains("export-standalone") ? 1 : exportConfig.pageHeight));
+
+      if (height > exportConfig.maxCanvasSide) throw new Error(`单张图片过高（${height}px）`);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#fdfaf2";
+      context.fillRect(0, 0, width, height);
+      drawExportElement(context, element, width, false);
+
+      try {
+        return await canvasToBlob(canvas);
+      } catch (error) {
+        if (!isCanvasSecurityError(error) || retriedSecurityFallback) throw error;
+        replaceExportImagesWithPlaceholders(element);
+        return await renderElementToPngBlob(element, true);
+      }
+    }
+
+    function replaceExportImagesWithPlaceholders(root) {
+      Array.from(root.querySelectorAll("img")).forEach((image) => {
+        image.replaceWith(createExportImagePlaceholder(image));
+      });
+    }
+
+    function drawExportElement(context, element, canvasWidth, measureOnly) {
+      const state = {
+        x: exportConfig.padding,
+        y: exportConfig.padding,
+        width: canvasWidth - exportConfig.padding * 2,
+        first: true
+      };
+
+      Array.from(element.children).forEach((child) => {
+        state.y = drawExportBlock(context, child, state, measureOnly);
+        state.first = false;
+      });
+
+      return state.y + exportConfig.padding;
+    }
+
+    function drawExportBlock(context, element, state, measureOnly) {
+      if (element.classList && element.classList.contains("export-image-placeholder")) {
+        return drawExportPlaceholder(context, element, state, measureOnly);
+      }
+
+      const tag = element.tagName.toUpperCase();
+      if (/^H[1-6]$/.test(tag)) return drawExportHeading(context, element, state, measureOnly);
+      if (tag === "P") return drawExportParagraph(context, element, state, measureOnly);
+      if (tag === "UL" || tag === "OL") return drawExportList(context, element, state, tag === "OL", measureOnly);
+      if (tag === "BLOCKQUOTE") return drawExportQuote(context, element, state, measureOnly);
+      if (tag === "PRE") return drawExportCode(context, element, state, measureOnly);
+      if (tag === "TABLE") return drawExportTable(context, element, state, measureOnly);
+      if (tag === "IMG") return drawExportImage(context, element, state, measureOnly);
+      if (tag === "HR") return drawExportRule(context, state, measureOnly);
+
+      let y = state.y;
+      Array.from(element.children).forEach((child) => {
+        y = drawExportBlock(context, child, { ...state, y }, measureOnly);
+      });
+      return y || state.y;
+    }
+
+    function drawExportHeading(context, element, state, measureOnly) {
+      const level = Number(element.tagName.slice(1));
+      const sizes = { 1: 48, 2: 34, 3: 26, 4: 22, 5: 20, 6: 18 };
+      const top = state.y + (state.first ? 0 : level === 1 ? 34 : 24);
+      setCanvasFont(context, `${level <= 2 ? 760 : 720} ${sizes[level] || 22}px Georgia, serif`, "#1f2420");
+      const y = drawWrappedCanvasText(context, compactText(element), state.x, top, state.width, sizes[level] * 1.32, measureOnly);
+      const afterText = y + (level === 1 ? 16 : 14);
+
+      if (level === 1 && !measureOnly) {
+        context.strokeStyle = "#1d6d73";
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(state.x, afterText);
+        context.lineTo(state.x + state.width, afterText);
+        context.stroke();
+      }
+
+      return afterText + (level === 1 ? 28 : 14);
+    }
+
+    function drawExportParagraph(context, element, state, measureOnly) {
+      const image = element.children.length === 1 && element.children[0].tagName && element.children[0].tagName.toUpperCase() === "IMG"
+        ? element.children[0]
+        : null;
+      if (image) return drawExportImage(context, image, state, measureOnly);
+
+      const text = compactText(element);
+      if (!text) return state.y;
+
+      setCanvasFont(context, "22px Georgia, serif", "#1f2420");
+      const y = drawWrappedCanvasText(context, text, state.x, state.y, state.width, 38, measureOnly);
+      return y + 24;
+    }
+
+    function drawExportList(context, element, state, ordered, measureOnly) {
+      setCanvasFont(context, "22px Georgia, serif", "#1f2420");
+      let y = state.y;
+      Array.from(element.children).forEach((item, index) => {
+        const marker = ordered ? `${index + 1}.` : "-";
+        if (!measureOnly) context.fillText(marker, state.x, y);
+        y = drawWrappedCanvasText(context, compactText(item), state.x + 34, y, state.width - 34, 36, measureOnly);
+        y += 8;
+      });
+      return y + 18;
+    }
+
+    function drawExportQuote(context, element, state, measureOnly) {
+      const text = compactText(element);
+      const innerX = state.x + 26;
+      const innerWidth = state.width - 44;
+      setCanvasFont(context, "21px Georgia, serif", "#4e554f");
+      const textHeight = measureWrappedCanvasText(context, text, innerWidth, 36);
+      const blockHeight = Math.max(92, textHeight + 32);
+
+      if (!measureOnly) {
+        context.fillStyle = "rgba(220, 239, 240, 0.58)";
+        context.fillRect(state.x, state.y, state.width, blockHeight);
+        context.fillStyle = "#1d6d73";
+        context.fillRect(state.x, state.y, 5, blockHeight);
+      }
+
+      drawWrappedCanvasText(context, text, innerX, state.y + 16, innerWidth, 36, measureOnly);
+      return state.y + blockHeight + 28;
+    }
+
+    function drawExportCode(context, element, state, measureOnly) {
+      const text = element.textContent || "";
+      const lineHeight = 25;
+      setCanvasFont(context, "18px Consolas, monospace", "#eef4e8");
+      const lines = text
+        .replace(/\s+$/g, "")
+        .split("\n")
+        .flatMap((line) => wrapCanvasText(context, line || " ", state.width - 36));
+      const blockHeight = Math.max(70, lines.length * lineHeight + 32);
+
+      if (!measureOnly) {
+        context.fillStyle = "#202721";
+        roundedCanvasRect(context, state.x, state.y, state.width, blockHeight, 8);
+        context.fill();
+      }
+
+      lines.forEach((line, index) => {
+        if (!measureOnly) context.fillText(line, state.x + 18, state.y + 18 + index * lineHeight);
+      });
+
+      return state.y + blockHeight + 28;
+    }
+
+    function drawExportTable(context, table, state, measureOnly) {
+      const rows = Array.from(table.querySelectorAll("tr")).map((row) => Array.from(row.children).map((cell) => compactText(cell)));
+      if (!rows.length) return state.y;
+
+      const columnCount = Math.max(...rows.map((row) => row.length));
+      const columnWidths = measureExportTableColumns(context, rows, columnCount, state.width);
+      const lineHeight = 28;
+      let y = state.y;
+
+      setCanvasFont(context, "18px Georgia, serif", "#1f2420");
+      rows.forEach((row, rowIndex) => {
+        const cellLines = row.map((cell, index) => wrapCanvasText(context, cell, columnWidths[index] - 24));
+        const rowHeight = Math.max(48, Math.max(...cellLines.map((lines) => lines.length)) * lineHeight + 20);
+        let x = state.x;
+
+        for (let index = 0; index < columnCount; index += 1) {
+          if (!measureOnly) {
+            context.fillStyle = rowIndex === 0 ? "rgba(29,109,115,.12)" : "#fdfaf2";
+            context.fillRect(x, y, columnWidths[index], rowHeight);
+            context.strokeStyle = "#d9d4c8";
+            context.lineWidth = 1;
+            context.strokeRect(x, y, columnWidths[index], rowHeight);
+            context.fillStyle = "#1f2420";
+            cellLines[index].forEach((line, lineIndex) => {
+              context.fillText(line, x + 12, y + 12 + lineIndex * lineHeight);
+            });
+          }
+          x += columnWidths[index];
+        }
+
+        y += rowHeight;
+      });
+
+      return y + 28;
+    }
+
+    function measureExportTableColumns(context, rows, columnCount, availableWidth) {
+      setCanvasFont(context, "18px Georgia, serif", "#1f2420");
+      const widths = Array.from({ length: columnCount }, (_, index) => {
+        const maxText = Math.max(...rows.map((row) => context.measureText(row[index] || "").width));
+        return Math.max(120, Math.min(360, maxText + 32));
+      });
+      const total = widths.reduce((sum, width) => sum + width, 0);
+      if (total < availableWidth) {
+        const extra = (availableWidth - total) / columnCount;
+        return widths.map((width) => width + extra);
+      }
+      return widths;
+    }
+
+    function drawExportImage(context, image, state, measureOnly) {
+      if (!image.complete || !image.naturalWidth || !image.naturalHeight) {
+        return drawExportPlaceholder(context, createExportImagePlaceholder(image), state, measureOnly);
+      }
+
+      const scale = Math.min(1, state.width / image.naturalWidth);
+      const width = Math.max(1, image.naturalWidth * scale);
+      const height = Math.max(1, image.naturalHeight * scale);
+      const x = state.x + (state.width - width) / 2;
+
+      if (!measureOnly) {
+        try {
+          context.drawImage(image, x, state.y, width, height);
+        } catch (_) {
+          return drawExportPlaceholder(context, createExportImagePlaceholder(image), state, measureOnly);
+        }
+      }
+
+      return state.y + height + 28;
+    }
+
+    function drawExportPlaceholder(context, element, state, measureOnly) {
+      const title = element.querySelector("strong") ? element.querySelector("strong").textContent : "图片未嵌入";
+      const details = Array.from(element.querySelectorAll("span")).map((span) => span.textContent).filter(Boolean).join(" ");
+      const height = 190;
+
+      if (!measureOnly) {
+        context.fillStyle = "rgba(220,239,240,.48)";
+        roundedCanvasRect(context, state.x, state.y, state.width, height, 8);
+        context.fill();
+        context.setLineDash([10, 8]);
+        context.strokeStyle = "rgba(29,109,115,.55)";
+        context.lineWidth = 2;
+        context.stroke();
+        context.setLineDash([]);
+
+        setCanvasFont(context, "700 20px Georgia, serif", "#124f54");
+        context.fillText(title, state.x + 24, state.y + 34);
+        setCanvasFont(context, "14px Consolas, monospace", "#4e554f");
+        drawWrappedCanvasText(context, details, state.x + 24, state.y + 72, state.width - 48, 22, false);
+      }
+
+      return state.y + height + 28;
+    }
+
+    function drawExportRule(context, state, measureOnly) {
+      if (!measureOnly) {
+        context.strokeStyle = "#d9d4c8";
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(state.x, state.y + 18);
+        context.lineTo(state.x + state.width, state.y + 18);
+        context.stroke();
+      }
+      return state.y + 48;
+    }
+
+    function setCanvasFont(context, font, color) {
+      context.font = font;
+      context.fillStyle = color;
+      context.textBaseline = "top";
+    }
+
+    function drawWrappedCanvasText(context, text, x, y, maxWidth, lineHeight, measureOnly) {
+      const lines = wrapCanvasText(context, text, maxWidth);
+      lines.forEach((line, index) => {
+        if (!measureOnly) context.fillText(line, x, y + index * lineHeight);
+      });
+      return y + lines.length * lineHeight;
+    }
+
+    function measureWrappedCanvasText(context, text, maxWidth, lineHeight) {
+      return wrapCanvasText(context, text, maxWidth).length * lineHeight;
+    }
+
+    function wrapCanvasText(context, text, maxWidth) {
+      const content = String(text || "").replace(/\s+/g, " ").trim();
+      if (!content) return [""];
+
+      const tokens = content.match(/[\u3400-\u9fff\uff00-\uffef]|[^\s\u3400-\u9fff\uff00-\uffef]+|\s+/g) || [content];
+      const lines = [];
+      let line = "";
+
+      tokens.forEach((token) => {
+        if (/^\s+$/.test(token)) {
+          if (line) line += " ";
+          return;
+        }
+
+        if (context.measureText(token).width > maxWidth) {
+          const pieces = splitLongCanvasToken(context, token, maxWidth);
+          pieces.forEach((piece) => {
+            const candidatePiece = line ? line + piece : piece;
+            if (context.measureText(candidatePiece).width <= maxWidth || !line) {
+              line = candidatePiece;
+              return;
+            }
+            lines.push(line.trimEnd());
+            line = piece;
+          });
+          return;
+        }
+
+        const candidate = line ? line + token : token;
+        if (context.measureText(candidate).width <= maxWidth || !line) {
+          line = candidate;
+          return;
+        }
+
+        lines.push(line.trimEnd());
+        line = token;
+      });
+
+      if (line) lines.push(line.trimEnd());
+      return lines.length ? lines : [""];
+    }
+
+    function splitLongCanvasToken(context, token, maxWidth) {
+      const pieces = [];
+      let piece = "";
+
+      for (const char of String(token)) {
+        const candidate = piece + char;
+        if (context.measureText(candidate).width <= maxWidth || !piece) {
+          piece = candidate;
+          continue;
+        }
+        pieces.push(piece);
+        piece = char;
+      }
+
+      if (piece) pieces.push(piece);
+      return pieces;
+    }
+
+    function roundedCanvasRect(context, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.lineTo(x + width - r, y);
+      context.quadraticCurveTo(x + width, y, x + width, y + r);
+      context.lineTo(x + width, y + height - r);
+      context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      context.lineTo(x + r, y + height);
+      context.quadraticCurveTo(x, y + height, x, y + height - r);
+      context.lineTo(x, y + r);
+      context.quadraticCurveTo(x, y, x + r, y);
+      context.closePath();
+    }
+
+    function canvasToBlob(canvas) {
+      return new Promise((resolve, reject) => {
+        try {
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error("浏览器没有生成 PNG"));
+          }, "image/png");
+        } catch (error) {
+          reject(error);
+        }
+      });
+    }
+
+    function exportBaseName() {
+      return safeFilePart(activeFileName.replace(/\.(md|markdown|txt)$/i, "")) || "markdown";
+    }
+
+    function safeFilePart(value) {
+      return String(value || "")
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 48);
+    }
+
+    function friendlyExportError(error) {
+      const message = error && error.message ? error.message : "未知错误";
+      if (isCanvasSecurityError(error)) {
+        return "浏览器阻止了外部图片写入 Canvas，请改用本地同源图片或 data:image 内嵌图片";
+      }
+      return message;
+    }
+
+    function isCanvasSecurityError(error) {
+      const name = error && error.name ? error.name : "";
+      const message = error && error.message ? error.message : "";
+      return /SecurityError/i.test(name) || /tainted|canvas/i.test(message);
+    }
+
     function renderNow() {
       preview.innerHTML = markdownToHtml(editor.value);
       setupMermaidToggles(preview);
+      setupPreviewImages(preview);
       updateMeta();
     }
 
@@ -782,6 +2120,79 @@ ${markdownToHtml(editor.value)}
       });
     }
 
+    function setupPreviewImages(root) {
+      Array.from((root || document).querySelectorAll("img")).forEach((image) => {
+        image.tabIndex = 0;
+        image.addEventListener("click", (event) => {
+          event.preventDefault();
+          openImageViewer(image);
+        });
+        image.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          openImageViewer(image);
+        });
+      });
+    }
+
+    function openImageViewer(image) {
+      const source = image.currentSrc || image.src;
+      if (!source) return;
+
+      imageViewerCaption.textContent = image.alt || image.getAttribute("src") || "图片";
+      imageViewerImage.onload = fitImageViewer;
+      imageViewerImage.src = source;
+      imageViewerImage.alt = image.alt || "";
+      imageViewer.classList.add("visible");
+      if (imageViewerImage.complete) window.requestAnimationFrame(fitImageViewer);
+    }
+
+    function closeImageViewer() {
+      imageViewer.classList.remove("visible");
+      imageViewerImage.removeAttribute("src");
+      imageViewerDragging = false;
+      imageViewerStage.classList.remove("dragging");
+    }
+
+    function zoomImageViewer(multiplier) {
+      setImageViewerScale(imageViewerScale * multiplier);
+    }
+
+    function setImageViewerScale(scale) {
+      imageViewerScale = Math.min(8, Math.max(0.1, scale));
+      applyImageViewerTransform();
+    }
+
+    function fitImageViewer() {
+      const naturalWidth = imageViewerImage.naturalWidth || imageViewerImage.width || 1;
+      const naturalHeight = imageViewerImage.naturalHeight || imageViewerImage.height || 1;
+      const stageWidth = Math.max(1, imageViewerStage.clientWidth - 48);
+      const stageHeight = Math.max(1, imageViewerStage.clientHeight - 48);
+      const scale = Math.min(stageWidth / naturalWidth, stageHeight / naturalHeight, 1);
+      imageViewerScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+      imageViewerX = 0;
+      imageViewerY = 0;
+      applyImageViewerTransform();
+    }
+
+    function applyImageViewerTransform() {
+      imageViewerImage.style.transform = `translate(calc(-50% + ${imageViewerX}px), calc(-50% + ${imageViewerY}px)) scale(${imageViewerScale})`;
+      imageViewerZoom.textContent = `${Math.round(imageViewerScale * 100)}%`;
+    }
+
+    function endImageViewerDrag(event) {
+      if (!imageViewerDragging) return;
+      imageViewerDragging = false;
+      imageViewerStage.classList.remove("dragging");
+      if (event && typeof imageViewerStage.releasePointerCapture === "function") {
+        try {
+          imageViewerStage.releasePointerCapture(event.pointerId);
+        } catch (_) {
+          // Pointer capture may already be released by the browser.
+        }
+      }
+    }
+
     function setView(view) {
       currentView = view;
       workspace.dataset.view = view;
@@ -808,7 +2219,10 @@ ${markdownToHtml(editor.value)}
     }
 
     function downloadBlob(content, name, type) {
-      const blob = new Blob([content], { type });
+      downloadBlobFile(new Blob([content], { type }), name || "document.md");
+    }
+
+    function downloadBlobFile(blob, name) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -942,8 +2356,11 @@ ${markdownToHtml(editor.value)}
         nodes: new Map(),
         edges: [],
         classDefs: new Map(),
+        groups: new Map(),
+        groupOrder: [],
         order: []
       };
+      const activeGroups = [];
 
       for (const rawLine of lines) {
         const line = rawLine.trim().replace(/;$/, "");
@@ -955,17 +2372,41 @@ ${markdownToHtml(editor.value)}
           continue;
         }
 
+        const subgraph = readMermaidSubgraph(line, diagram.groupOrder.length + 1);
+        if (subgraph) {
+          subgraph.parentId = activeGroups[activeGroups.length - 1] || "";
+          diagram.groups.set(subgraph.id, subgraph);
+          diagram.groupOrder.push(subgraph.id);
+          activeGroups.push(subgraph.id);
+          continue;
+        }
+
+        if (/^end$/i.test(line)) {
+          activeGroups.pop();
+          continue;
+        }
+
         const classDef = line.match(/^classDef\s+([A-Za-z0-9_-]+)\s+(.+)$/);
         if (classDef) {
           diagram.classDefs.set(classDef[1], parseMermaidStyle(classDef[2]));
           continue;
         }
 
+        const styleLine = line.match(/^style\s+([A-Za-z0-9_-]+)\s+(.+)$/i);
+        if (styleLine) {
+          const node = ensureMermaidNode(diagram, styleLine[1]);
+          node.style = { ...node.style, ...parseMermaidStyle(styleLine[2]) };
+          addMermaidNodesToGroups(diagram, [styleLine[1]], activeGroups);
+          continue;
+        }
+
         const classLine = line.match(/^class\s+(.+?)\s+([A-Za-z0-9_-]+)$/);
         if (classLine) {
-          classLine[1].split(",").map((id) => id.trim()).filter(Boolean).forEach((id) => {
+          const ids = classLine[1].split(",").map((id) => id.trim()).filter(Boolean);
+          ids.forEach((id) => {
             ensureMermaidNode(diagram, id).className = classLine[2];
           });
+          addMermaidNodesToGroups(diagram, ids, activeGroups);
           continue;
         }
 
@@ -974,6 +2415,7 @@ ${markdownToHtml(editor.value)}
         const edge = readMermaidEdgeToken(line, sourceNode.end);
         if (!edge) {
           mergeMermaidNode(diagram, sourceNode);
+          addMermaidNodesToGroups(diagram, [sourceNode.id], activeGroups);
           continue;
         }
 
@@ -981,6 +2423,7 @@ ${markdownToHtml(editor.value)}
         if (!targetNode) continue;
         mergeMermaidNode(diagram, sourceNode);
         mergeMermaidNode(diagram, targetNode);
+        addMermaidNodesToGroups(diagram, [sourceNode.id, targetNode.id], activeGroups);
         diagram.edges.push({
           from: sourceNode.id,
           to: targetNode.id,
@@ -993,6 +2436,30 @@ ${markdownToHtml(editor.value)}
       return diagram;
     }
 
+    function readMermaidSubgraph(line, fallbackIndex) {
+      const match = line.match(/^subgraph\s+(.+)$/i);
+      if (!match) return null;
+
+      const source = match[1].trim();
+      const explicit = source.match(/^([A-Za-z0-9_-]+)\s*[\[\(\{](.*)[\]\)\}]\s*$/);
+      if (explicit) {
+        return {
+          id: explicit[1],
+          label: normalizeMermaidLabel(explicit[2]) || explicit[1],
+          nodeIds: new Set(),
+          parentId: ""
+        };
+      }
+
+      const id = /^[A-Za-z0-9_-]+$/.test(source) ? source : `subgraph_${fallbackIndex}`;
+      return {
+        id,
+        label: normalizeMermaidLabel(source) || id,
+        nodeIds: new Set(),
+        parentId: ""
+      };
+    }
+
     function parseMermaidStyle(styleText) {
       const style = {};
       styleText.split(",").forEach((part) => {
@@ -1003,6 +2470,15 @@ ${markdownToHtml(editor.value)}
         if (["fill", "stroke", "color"].includes(key)) style[key] = value;
       });
       return style;
+    }
+
+    function addMermaidNodesToGroups(diagram, nodeIds, activeGroups) {
+      if (!activeGroups.length) return;
+      activeGroups.forEach((groupId) => {
+        const group = diagram.groups.get(groupId);
+        if (!group) return;
+        nodeIds.forEach((id) => group.nodeIds.add(id));
+      });
     }
 
     function readMermaidNodeToken(text, start) {
@@ -1024,7 +2500,7 @@ ${markdownToHtml(editor.value)}
           if (text[index] === closer) depth -= 1;
           if (depth > 0) index += 1;
         }
-        label = text.slice(labelStart, index);
+        label = normalizeMermaidLabel(text.slice(labelStart, index));
         if (text[index] === closer) index += 1;
       }
 
@@ -1071,7 +2547,7 @@ ${markdownToHtml(editor.value)}
 
     function ensureMermaidNode(diagram, id) {
       if (!diagram.nodes.has(id)) {
-        diagram.nodes.set(id, { id, label: id, className: "" });
+        diagram.nodes.set(id, { id, label: id, className: "", style: {} });
         diagram.order.push(id);
       }
       return diagram.nodes.get(id);
@@ -1079,6 +2555,7 @@ ${markdownToHtml(editor.value)}
 
     function renderFlowchartSvg(diagram) {
       const layout = layoutMermaidFlowchart(diagram);
+      const groupFrames = layout.groups.map(renderMermaidGroup).join("");
       const edgePaths = diagram.edges.map((edge, index) => renderMermaidEdge(edge, index, layout)).join("");
       const nodeGroups = layout.nodes.map((node) => renderMermaidNode(node, diagram.classDefs)).join("");
 
@@ -1088,6 +2565,7 @@ ${markdownToHtml(editor.value)}
     <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f5e5a"></path>
   </marker>
 </defs>
+${groupFrames}
 ${edgePaths}
 ${nodeGroups}
 </svg></figure>`;
@@ -1135,12 +2613,91 @@ ${nodeGroups}
 
       const nodes = rows.flat();
       const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+      const groups = layoutMermaidGroups(diagram, nodeMap);
+      const outerPadding = 8;
+      const minX = Math.min(...nodes.map((node) => node.x), ...groups.map((group) => group.x), 0);
+      const minY = Math.min(...nodes.map((node) => node.y), ...groups.map((group) => group.y), 0);
+      const maxX = Math.max(...nodes.map((node) => node.x + node.width), ...groups.map((group) => group.x + group.width), canvasWidth);
+      const maxY = Math.max(...nodes.map((node) => node.y + node.height), ...groups.map((group) => group.y + group.height), canvasHeight);
+      const offsetX = minX < outerPadding ? outerPadding - minX : 0;
+      const offsetY = minY < outerPadding ? outerPadding - minY : 0;
+      if (offsetX || offsetY) {
+        nodes.forEach((node) => {
+          node.x += offsetX;
+          node.y += offsetY;
+        });
+        groups.forEach((group) => {
+          group.x += offsetX;
+          group.y += offsetY;
+        });
+      }
       return {
-        width: Math.round(canvasWidth),
-        height: Math.round(canvasHeight),
+        width: Math.round(Math.max(canvasWidth + offsetX, maxX + offsetX + outerPadding)),
+        height: Math.round(Math.max(canvasHeight + offsetY, maxY + offsetY + outerPadding)),
         nodes,
-        nodeMap
+        nodeMap,
+        groups
       };
+    }
+
+    function layoutMermaidGroups(diagram, nodeMap) {
+      const layouts = new Map();
+      [...diagram.groupOrder].reverse().forEach((id) => {
+        const group = diagram.groups.get(id);
+        if (!group) return;
+
+        const nodeBoxes = [...group.nodeIds]
+          .map((nodeId) => nodeMap.get(nodeId))
+          .filter(Boolean)
+          .map((node) => ({
+            x: node.x,
+            y: node.y,
+            width: node.width,
+            height: node.height
+          }));
+        const childBoxes = [...layouts.values()]
+          .filter((child) => child.parentId === id)
+          .map((child) => ({
+            x: child.x,
+            y: child.y,
+            width: child.width,
+            height: child.height
+          }));
+        const boxes = [...nodeBoxes, ...childBoxes];
+        if (!boxes.length) return;
+
+        let lines = mermaidLabelLines(group.label);
+        if (!lines.length) lines = [group.id];
+        const minX = Math.min(...boxes.map((box) => box.x));
+        const minY = Math.min(...boxes.map((box) => box.y));
+        const maxX = Math.max(...boxes.map((box) => box.x + box.width));
+        const maxY = Math.max(...boxes.map((box) => box.y + box.height));
+        const labelWidth = Math.max(...lines.map(estimateTextWidth)) + 28;
+        const labelHeight = Math.max(24, lines.length * 18 + 8);
+        const paddingX = 18;
+        const paddingBottom = 16;
+        const paddingTop = labelHeight + 12;
+        let x = minX - paddingX;
+        let width = maxX - minX + paddingX * 2;
+
+        if (labelWidth > width) {
+          const extraWidth = labelWidth - width;
+          x -= extraWidth / 2;
+          width = labelWidth;
+        }
+
+        layouts.set(id, {
+          id,
+          parentId: group.parentId,
+          lines,
+          x,
+          y: minY - paddingTop,
+          width,
+          height: maxY - minY + paddingTop + paddingBottom
+        });
+      });
+
+      return diagram.groupOrder.map((id) => layouts.get(id)).filter(Boolean);
     }
 
     function assignMermaidLevels(diagram) {
@@ -1177,7 +2734,7 @@ ${nodeGroups}
     }
 
     function renderMermaidNode(node, classDefs) {
-      const style = classDefs.get(node.className) || {};
+      const style = { ...(classDefs.get(node.className) || {}), ...(node.style || {}) };
       const fill = safeMermaidColor(style.fill, "#fffdf8");
       const stroke = safeMermaidColor(style.stroke, "#5f5e5a");
       const color = safeMermaidColor(style.color, "#2c2c2a");
@@ -1189,6 +2746,17 @@ ${nodeGroups}
       return `<g>
 <rect x="${node.x}" y="${node.y}" width="${node.width}" height="${node.height}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="2"></rect>
 <text text-anchor="middle" dominant-baseline="middle" fill="${color}" font-size="13" font-weight="650">${lines}</text>
+</g>`;
+    }
+
+    function renderMermaidGroup(group) {
+      const label = group.lines.map((line, index) => {
+        return `<tspan x="${group.x + 14}" y="${group.y + 18 + index * 18}">${escapeHtml(line)}</tspan>`;
+      }).join("");
+
+      return `<g>
+<rect x="${group.x}" y="${group.y}" width="${group.width}" height="${group.height}" rx="8" fill="#f7fbf6" stroke="#b9c7bf" stroke-width="1.5"></rect>
+<text text-anchor="start" fill="#3b5951" font-size="12" font-weight="700">${label}</text>
 </g>`;
     }
 
@@ -1237,11 +2805,21 @@ ${nodeGroups}
     }
 
     function mermaidLabelLines(label) {
-      return String(label || "")
+      return normalizeMermaidLabel(label)
         .replace(/<br\s*\/?>/gi, "\n")
         .split(/\n+/)
         .map((line) => line.trim())
         .filter(Boolean);
+    }
+
+    function normalizeMermaidLabel(label) {
+      let value = String(label || "").trim();
+      const first = value[0];
+      const last = value[value.length - 1];
+      if ((first === "\"" && last === "\"") || (first === "'" && last === "'")) {
+        value = value.slice(1, -1);
+      }
+      return value.replace(/\\"/g, "\"").replace(/\\'/g, "'");
     }
 
     function estimateTextWidth(text) {
