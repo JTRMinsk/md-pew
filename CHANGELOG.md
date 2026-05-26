@@ -30,6 +30,22 @@ This file is the source of truth for md-pew version history. Every iteration sho
 - Verified: ...
 ```
 
+## 0.1.6 - 2026-05-26
+
+### 中文
+
+- 修复：Mermaid 预览支持 `subgraph ... end` 分组框，不再把分组语法误当作普通节点。
+- 修复：Mermaid 预览支持 `style 节点 fill:...,stroke:...,color:...`，可直接设置节点填充、描边和文字颜色。
+- 修复：Mermaid 节点和分组标签支持 `<br/>` / `<br>` 换行，并正确处理带引号的标签。
+- 验证：检查 JavaScript 语法，并用包含 `subgraph`、`style` 和 `<br/>` 的 Mermaid 样例断言 SVG 输出。
+
+### English
+
+- Fixed: Mermaid preview now supports `subgraph ... end` group frames instead of treating group syntax as normal nodes.
+- Fixed: Mermaid preview now supports `style node fill:...,stroke:...,color:...` for direct node fill, stroke, and text colors.
+- Fixed: Mermaid node and group labels now support `<br/>` / `<br>` line breaks and quoted labels.
+- Verified: Checked JavaScript syntax and asserted SVG output with a Mermaid sample containing `subgraph`, `style`, and `<br/>`.
+
 ## 0.1.5 - 2026-05-05
 
 ### 中文
