@@ -30,6 +30,22 @@ This file is the source of truth for md-pew version history. Every iteration sho
 - Verified: ...
 ```
 
+## 0.1.7 - 2026-05-28
+
+### 中文
+
+- 修复：导出图片时恢复代码块文字颜色，避免代码块被导出成看不清内容的深色块。
+- 修复：导出图片时保留代码块中的行首空格、连续空格和原始换行，避免 ASCII/Unicode 架构图被压缩变形。
+- 修改：导出图片中的代码块改为浅底深字，并让 canvas 字体栈与预览区保持一致，提高框线、箭头和中英文混排的显示稳定性。
+- 验证：检查 JavaScript 语法，并用包含框线、箭头、中文和连续空格的代码块样例断言预格式文本折行会保留空白。
+
+### English
+
+- Fixed: Image export now restores the code-block text color so code blocks are not exported as unreadable dark blocks.
+- Fixed: Image export now preserves leading spaces, repeated spaces, and original line breaks in code blocks so ASCII/Unicode architecture diagrams keep their shape.
+- Changed: Image-exported code blocks now use a light background with dark text, and the canvas code-block font stack is aligned with the preview font stack for more stable box-line, arrow, and mixed Chinese/English rendering.
+- Verified: Checked JavaScript syntax and asserted preformatted wrapping with a code-block sample containing box lines, arrows, Chinese text, and repeated spaces.
+
 ## 0.1.6 - 2026-05-26
 
 ### 中文

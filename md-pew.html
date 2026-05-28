@@ -1824,19 +1824,25 @@ ${markdownToHtml(editor.value)}
     function drawExportCode(context, element, state, measureOnly) {
       const text = element.textContent || "";
       const lineHeight = 25;
-      setCanvasFont(context, "18px Consolas, monospace", "#eef4e8");
+      const font = "18px \"Cascadia Code\", \"SFMono-Regular\", Consolas, \"Courier New\", monospace";
+      setCanvasFont(context, font, "#1f2420");
       const lines = text
-        .replace(/\s+$/g, "")
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n+$/g, "")
         .split("\n")
-        .flatMap((line) => wrapCanvasText(context, line || " ", state.width - 36));
+        .flatMap((line) => wrapPreformattedCanvasText(context, line || " ", state.width - 36));
       const blockHeight = Math.max(70, lines.length * lineHeight + 32);
 
       if (!measureOnly) {
-        context.fillStyle = "#202721";
+        context.fillStyle = "#fffdf8";
         roundedCanvasRect(context, state.x, state.y, state.width, blockHeight, 8);
         context.fill();
+        context.strokeStyle = "#d9d4c8";
+        context.lineWidth = 1;
+        context.stroke();
       }
 
+      setCanvasFont(context, font, "#1f2420");
       lines.forEach((line, index) => {
         if (!measureOnly) context.fillText(line, state.x + 18, state.y + 18 + index * lineHeight);
       });
@@ -2009,6 +2015,27 @@ ${markdownToHtml(editor.value)}
 
       if (line) lines.push(line.trimEnd());
       return lines.length ? lines : [""];
+    }
+
+    function wrapPreformattedCanvasText(context, text, maxWidth) {
+      const content = String(text || "").replace(/\t/g, "    ");
+      if (!content) return [" "];
+
+      const lines = [];
+      let line = "";
+
+      for (const char of content) {
+        const candidate = line + char;
+        if (context.measureText(candidate).width <= maxWidth || !line) {
+          line = candidate;
+          continue;
+        }
+        lines.push(line);
+        line = char;
+      }
+
+      if (line) lines.push(line);
+      return lines.length ? lines : [" "];
     }
 
     function splitLongCanvasToken(context, token, maxWidth) {
