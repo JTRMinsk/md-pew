@@ -30,6 +30,24 @@ This file is the source of truth for md-pew version history. Every iteration sho
 - Verified: ...
 ```
 
+## 0.1.8 - 2026-06-25
+
+### 中文
+
+- 修复：Mermaid 预览将顶层 `subgraph` 作为独立布局容器排版，避免大型架构图中的分组框和节点互相重叠。
+- 修复：`FE --> DB` 这类连接到子图的边不再生成额外普通节点，而是连接到对应分组框。
+- 修复：支持 `A --> B --> C` 链式边解析，避免同一行后续连线丢失。
+- 修改：Mermaid 节点长标签会自动换行，并清理 `([label])`、`[(label)]` 等形状包装符号。
+- 验证：检查 JavaScript 语法，并用包含 FE/BE 子图、DB、外部系统和链式边的架构图样例断言布局无分组重叠。
+
+### English
+
+- Fixed: Mermaid preview now lays out top-level `subgraph` blocks as independent containers to avoid overlapping groups and nodes in larger architecture diagrams.
+- Fixed: Edges such as `FE --> DB` no longer create extra normal nodes and now connect to the matching group frame.
+- Fixed: Added support for chained edges such as `A --> B --> C` so later links on the same line are not dropped.
+- Changed: Mermaid node labels now wrap long text and clean shape wrappers such as `([label])` and `[(label)]`.
+- Verified: Checked JavaScript syntax and asserted non-overlapping group layout with an architecture sample containing FE/BE subgraphs, DB, external systems, and chained edges.
+
 ## 0.1.7 - 2026-05-28
 
 ### 中文
