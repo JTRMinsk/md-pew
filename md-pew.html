@@ -1824,19 +1824,25 @@ ${markdownToHtml(editor.value)}
     function drawExportCode(context, element, state, measureOnly) {
       const text = element.textContent || "";
       const lineHeight = 25;
-      setCanvasFont(context, "18px Consolas, monospace", "#eef4e8");
+      const font = "18px \"Cascadia Code\", \"SFMono-Regular\", Consolas, \"Courier New\", monospace";
+      setCanvasFont(context, font, "#1f2420");
       const lines = text
-        .replace(/\s+$/g, "")
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n+$/g, "")
         .split("\n")
-        .flatMap((line) => wrapCanvasText(context, line || " ", state.width - 36));
+        .flatMap((line) => wrapPreformattedCanvasText(context, line || " ", state.width - 36));
       const blockHeight = Math.max(70, lines.length * lineHeight + 32);
 
       if (!measureOnly) {
-        context.fillStyle = "#202721";
+        context.fillStyle = "#fffdf8";
         roundedCanvasRect(context, state.x, state.y, state.width, blockHeight, 8);
         context.fill();
+        context.strokeStyle = "#d9d4c8";
+        context.lineWidth = 1;
+        context.stroke();
       }
 
+      setCanvasFont(context, font, "#1f2420");
       lines.forEach((line, index) => {
         if (!measureOnly) context.fillText(line, state.x + 18, state.y + 18 + index * lineHeight);
       });
@@ -2009,6 +2015,27 @@ ${markdownToHtml(editor.value)}
 
       if (line) lines.push(line.trimEnd());
       return lines.length ? lines : [""];
+    }
+
+    function wrapPreformattedCanvasText(context, text, maxWidth) {
+      const content = String(text || "").replace(/\t/g, "    ");
+      if (!content) return [" "];
+
+      const lines = [];
+      let line = "";
+
+      for (const char of content) {
+        const candidate = line + char;
+        if (context.measureText(candidate).width <= maxWidth || !line) {
+          line = candidate;
+          continue;
+        }
+        lines.push(line);
+        line = char;
+      }
+
+      if (line) lines.push(line);
+      return lines.length ? lines : [" "];
     }
 
     function splitLongCanvasToken(context, token, maxWidth) {
@@ -2412,24 +2439,36 @@ ${markdownToHtml(editor.value)}
 
         const sourceNode = readMermaidNodeToken(line, 0);
         if (!sourceNode) continue;
-        const edge = readMermaidEdgeToken(line, sourceNode.end);
-        if (!edge) {
-          mergeMermaidNode(diagram, sourceNode);
-          addMermaidNodesToGroups(diagram, [sourceNode.id], activeGroups);
-          continue;
+        let currentNode = sourceNode;
+        let cursor = sourceNode.end;
+        let hasEdge = false;
+
+        while (true) {
+          const edge = readMermaidEdgeToken(line, cursor);
+          if (!edge) break;
+
+          const targetNode = readMermaidNodeToken(line, edge.end);
+          if (!targetNode) break;
+          if (!diagram.groups.has(currentNode.id)) mergeMermaidNode(diagram, currentNode);
+          if (!diagram.groups.has(targetNode.id)) mergeMermaidNode(diagram, targetNode);
+          addMermaidNodesToGroups(diagram, [currentNode.id, targetNode.id].filter((id) => !diagram.groups.has(id)), activeGroups);
+          diagram.edges.push({
+            from: currentNode.id,
+            to: targetNode.id,
+            label: edge.label,
+            dotted: edge.dotted
+          });
+          currentNode = targetNode;
+          cursor = targetNode.end;
+          hasEdge = true;
         }
 
-        const targetNode = readMermaidNodeToken(line, edge.end);
-        if (!targetNode) continue;
-        mergeMermaidNode(diagram, sourceNode);
-        mergeMermaidNode(diagram, targetNode);
-        addMermaidNodesToGroups(diagram, [sourceNode.id, targetNode.id], activeGroups);
-        diagram.edges.push({
-          from: sourceNode.id,
-          to: targetNode.id,
-          label: edge.label,
-          dotted: edge.dotted
-        });
+        if (!hasEdge) {
+          if (!diagram.groups.has(sourceNode.id)) {
+            mergeMermaidNode(diagram, sourceNode);
+            addMermaidNodesToGroups(diagram, [sourceNode.id], activeGroups);
+          }
+        }
       }
 
       if (!diagram.nodes.size || !diagram.edges.length) return null;
@@ -2524,12 +2563,12 @@ ${markdownToHtml(editor.value)}
       match = chunk.match(/^-\.(.*?)\.->/);
       if (match) return { label: match[1].trim(), dotted: true, end: index + match[0].length };
 
-      match = chunk.match(/^--\s*(.*?)\s*-->/);
-      if (match) return { label: match[1].trim(), dotted: false, end: index + match[0].length };
-
       if (chunk.startsWith("-.->")) return { label: "", dotted: true, end: index + 4 };
       if (chunk.startsWith("-->")) return { label: "", dotted: false, end: index + 3 };
       if (chunk.startsWith("==>")) return { label: "", dotted: false, end: index + 3 };
+
+      match = chunk.match(/^--\s*(.*?)\s*-->/);
+      if (match) return { label: match[1].trim(), dotted: false, end: index + match[0].length };
       return null;
     }
 
@@ -2572,6 +2611,11 @@ ${nodeGroups}
     }
 
     function layoutMermaidFlowchart(diagram) {
+      if (diagram.groups.size) return layoutMermaidGroupedFlowchart(diagram);
+      return layoutMermaidUngroupedFlowchart(diagram);
+    }
+
+    function layoutMermaidUngroupedFlowchart(diagram) {
       const levels = assignMermaidLevels(diagram);
       const rows = [];
       const gapX = 34;
@@ -2580,10 +2624,7 @@ ${nodeGroups}
 
       diagram.order.forEach((id) => {
         const node = diagram.nodes.get(id);
-        const labelLines = mermaidLabelLines(node.label);
-        const width = Math.max(126, Math.min(238, Math.max(...labelLines.map(estimateTextWidth)) + 28));
-        const height = Math.max(44, labelLines.length * 19 + 22);
-        const item = { ...node, lines: labelLines, width, height, x: 0, y: 0 };
+        const item = createMermaidLayoutNode(node);
         const level = levels.get(id) || 0;
         if (!rows[level]) rows[level] = [];
         rows[level].push(item);
@@ -2636,7 +2677,8 @@ ${nodeGroups}
         height: Math.round(Math.max(canvasHeight + offsetY, maxY + offsetY + outerPadding)),
         nodes,
         nodeMap,
-        groups
+        groups,
+        groupMap: new Map(groups.map((group) => [group.id, group]))
       };
     }
 
@@ -2700,25 +2742,254 @@ ${nodeGroups}
       return diagram.groupOrder.map((id) => layouts.get(id)).filter(Boolean);
     }
 
+    function layoutMermaidGroupedFlowchart(diagram) {
+      const topGroups = diagram.groupOrder
+        .map((id) => diagram.groups.get(id))
+        .filter((group) => group && !group.parentId);
+      const ownerByNode = new Map();
+
+      diagram.order.forEach((nodeId) => {
+        const owner = topGroups.find((group) => group.nodeIds.has(nodeId));
+        if (owner) ownerByNode.set(nodeId, owner.id);
+      });
+
+      const itemMap = new Map();
+      const itemOrder = [];
+      const addItem = (id, item) => {
+        if (itemMap.has(id)) return;
+        itemMap.set(id, item);
+        itemOrder.push(id);
+      };
+
+      diagram.order.forEach((nodeId) => {
+        const ownerId = ownerByNode.get(nodeId);
+        if (ownerId) {
+          addItem(`group:${ownerId}`, createMermaidGroupLayoutItem(diagram, ownerId, ownerByNode));
+          return;
+        }
+        addItem(`node:${nodeId}`, {
+          id: `node:${nodeId}`,
+          type: "node",
+          sourceId: nodeId,
+          width: 0,
+          height: 0,
+          node: createMermaidLayoutNode(diagram.nodes.get(nodeId))
+        });
+      });
+
+      topGroups.forEach((group) => {
+        addItem(`group:${group.id}`, createMermaidGroupLayoutItem(diagram, group.id, ownerByNode));
+      });
+
+      itemMap.forEach((item) => {
+        if (item.type === "node") {
+          item.width = item.node.width;
+          item.height = item.node.height;
+        }
+      });
+
+      const itemEdges = [];
+      diagram.edges.forEach((edge) => {
+        const from = mermaidItemIdForEndpoint(diagram, ownerByNode, edge.from);
+        const to = mermaidItemIdForEndpoint(diagram, ownerByNode, edge.to);
+        if (from && to && from !== to && itemMap.has(from) && itemMap.has(to)) {
+          itemEdges.push({ from, to });
+        }
+      });
+
+      const levels = assignMermaidLevelsForIds(itemOrder, itemEdges);
+      const rows = [];
+      const gapX = 64;
+      const gapY = 86;
+      const margin = 28;
+
+      itemOrder.forEach((id) => {
+        const item = itemMap.get(id);
+        const level = levels.get(id) || 0;
+        if (!rows[level]) rows[level] = [];
+        rows[level].push(item);
+      });
+
+      let canvasWidth = 0;
+      let canvasHeight = margin;
+      rows.forEach((row) => {
+        const rowWidth = row.reduce((sum, item) => sum + item.width, 0) + gapX * Math.max(0, row.length - 1);
+        const rowHeight = Math.max(...row.map((item) => item.height));
+        canvasWidth = Math.max(canvasWidth, rowWidth + margin * 2);
+        row.forEach((item) => {
+          item.y = canvasHeight + (rowHeight - item.height) / 2;
+        });
+        canvasHeight += rowHeight + gapY;
+      });
+      canvasHeight = Math.max(140, canvasHeight - gapY + margin);
+
+      rows.forEach((row) => {
+        const rowWidth = row.reduce((sum, item) => sum + item.width, 0) + gapX * Math.max(0, row.length - 1);
+        let x = (canvasWidth - rowWidth) / 2;
+        row.forEach((item) => {
+          item.x = x;
+          x += item.width + gapX;
+        });
+      });
+
+      const nodes = [];
+      const groups = [];
+      itemOrder.forEach((id) => {
+        const item = itemMap.get(id);
+        if (item.type === "node") {
+          item.node.x = item.x;
+          item.node.y = item.y;
+          nodes.push(item.node);
+          return;
+        }
+
+        groups.push({
+          id: item.sourceId,
+          parentId: "",
+          lines: item.lines,
+          x: item.x,
+          y: item.y,
+          width: item.width,
+          height: item.height
+        });
+        item.nodes.forEach((node) => {
+          nodes.push({
+            ...node,
+            x: item.x + item.innerX + node.x,
+            y: item.y + item.innerY + node.y
+          });
+        });
+      });
+
+      const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+      const groupMap = new Map(groups.map((group) => [group.id, group]));
+      const maxX = Math.max(...nodes.map((node) => node.x + node.width), ...groups.map((group) => group.x + group.width), canvasWidth);
+      const maxY = Math.max(...nodes.map((node) => node.y + node.height), ...groups.map((group) => group.y + group.height), canvasHeight);
+
+      return {
+        width: Math.round(maxX + margin),
+        height: Math.round(maxY + margin),
+        nodes,
+        nodeMap,
+        groups,
+        groupMap
+      };
+    }
+
+    function createMermaidGroupLayoutItem(diagram, groupId, ownerByNode) {
+      const group = diagram.groups.get(groupId);
+      const nodeIds = diagram.order.filter((nodeId) => ownerByNode.get(nodeId) === groupId);
+      const internalEdges = diagram.edges.filter((edge) => nodeIds.includes(edge.from) && nodeIds.includes(edge.to));
+      const inner = layoutMermaidNodeCollection(diagram, nodeIds, internalEdges);
+      const labelLines = wrapMermaidLabelLines(group ? group.label : groupId, 420);
+      const labelWidth = Math.max(...labelLines.map(estimateTextWidth), estimateTextWidth(groupId)) + 34;
+      const labelHeight = Math.max(26, labelLines.length * 18 + 10);
+      const paddingX = 24;
+      const paddingBottom = 20;
+      const paddingTop = labelHeight + 18;
+      const width = Math.max(inner.width + paddingX * 2, labelWidth, 180);
+      const height = Math.max(inner.height + paddingTop + paddingBottom, labelHeight + 80);
+
+      return {
+        id: `group:${groupId}`,
+        type: "group",
+        sourceId: groupId,
+        lines: labelLines,
+        width,
+        height,
+        innerX: (width - inner.width) / 2,
+        innerY: paddingTop,
+        nodes: inner.nodes
+      };
+    }
+
+    function layoutMermaidNodeCollection(diagram, ids, edges) {
+      const rows = [];
+      const gapX = 40;
+      const gapY = 52;
+      const levels = assignMermaidLevelsForIds(ids, edges);
+
+      ids.forEach((id) => {
+        const node = diagram.nodes.get(id);
+        if (!node) return;
+        const item = createMermaidLayoutNode(node);
+        const level = levels.get(id) || 0;
+        if (!rows[level]) rows[level] = [];
+        rows[level].push(item);
+      });
+
+      if (!rows.length) return { width: 132, height: 44, nodes: [] };
+
+      let width = 0;
+      let height = 0;
+      rows.forEach((row) => {
+        const rowWidth = row.reduce((sum, node) => sum + node.width, 0) + gapX * Math.max(0, row.length - 1);
+        const rowHeight = Math.max(...row.map((node) => node.height));
+        width = Math.max(width, rowWidth);
+        row.forEach((node) => {
+          node.y = height + (rowHeight - node.height) / 2;
+        });
+        height += rowHeight + gapY;
+      });
+      height = Math.max(44, height - gapY);
+
+      rows.forEach((row) => {
+        const rowWidth = row.reduce((sum, node) => sum + node.width, 0) + gapX * Math.max(0, row.length - 1);
+        let x = (width - rowWidth) / 2;
+        row.forEach((node) => {
+          node.x = x;
+          x += node.width + gapX;
+        });
+      });
+
+      return { width, height, nodes: rows.flat() };
+    }
+
+    function createMermaidLayoutNode(node) {
+      const lines = wrapMermaidLabelLines(node.label, 300);
+      const width = Math.max(126, Math.min(340, Math.max(...lines.map(estimateTextWidth)) + 32));
+      const height = Math.max(44, lines.length * 19 + 22);
+      return { ...node, lines, width, height, x: 0, y: 0 };
+    }
+
+    function mermaidItemIdForEndpoint(diagram, ownerByNode, id) {
+      if (diagram.groups.has(id)) return `group:${topMermaidGroupId(diagram, id)}`;
+      if (!diagram.nodes.has(id)) return "";
+      const ownerId = ownerByNode.get(id);
+      return ownerId ? `group:${ownerId}` : `node:${id}`;
+    }
+
+    function topMermaidGroupId(diagram, id) {
+      let group = diagram.groups.get(id);
+      while (group && group.parentId && diagram.groups.has(group.parentId)) {
+        group = diagram.groups.get(group.parentId);
+      }
+      return group ? group.id : id;
+    }
+
     function assignMermaidLevels(diagram) {
+      return assignMermaidLevelsForIds(diagram.order, diagram.edges);
+    }
+
+    function assignMermaidLevelsForIds(ids, edges) {
       const outgoing = new Map();
       const incoming = new Map();
-      diagram.order.forEach((id) => {
+      ids.forEach((id) => {
         outgoing.set(id, []);
         incoming.set(id, 0);
       });
-      diagram.edges.forEach((edge) => {
+      edges.forEach((edge) => {
         if (!outgoing.has(edge.from) || !incoming.has(edge.to)) return;
         outgoing.get(edge.from).push(edge.to);
         incoming.set(edge.to, incoming.get(edge.to) + 1);
       });
 
       const levels = new Map();
-      const roots = diagram.order.filter((id) => incoming.get(id) === 0);
-      const starters = roots.length ? roots : [diagram.order[0]];
+      const roots = ids.filter((id) => incoming.get(id) === 0);
+      const starters = roots.length ? roots : [ids[0]];
 
       starters.forEach((id) => visitMermaidLevel(id, 0, new Set(), outgoing, levels));
-      diagram.order.forEach((id) => {
+      ids.forEach((id) => {
         if (!levels.has(id)) visitMermaidLevel(id, 0, new Set(), outgoing, levels);
       });
 
@@ -2761,8 +3032,8 @@ ${nodeGroups}
     }
 
     function renderMermaidEdge(edge, index, layout) {
-      const from = layout.nodeMap.get(edge.from);
-      const to = layout.nodeMap.get(edge.to);
+      const from = mermaidEndpointBox(edge.from, layout);
+      const to = mermaidEndpointBox(edge.to, layout);
       if (!from || !to) return "";
 
       const backEdge = to.y <= from.y;
@@ -2795,6 +3066,10 @@ ${nodeGroups}
       return `<path d="${path}" fill="none" stroke="#5f5e5a" stroke-width="2"${dash} marker-end="url(#mermaidArrow)"></path>${label}`;
     }
 
+    function mermaidEndpointBox(id, layout) {
+      return layout.nodeMap.get(id) || (layout.groupMap && layout.groupMap.get(id));
+    }
+
     function renderMermaidEdgeLabel(label, x, y) {
       const safeLabel = escapeHtml(label);
       const width = Math.max(56, Math.min(220, estimateTextWidth(label) + 18));
@@ -2812,13 +3087,89 @@ ${nodeGroups}
         .filter(Boolean);
     }
 
+    function wrapMermaidLabelLines(label, maxWidth) {
+      return mermaidLabelLines(label).flatMap((line) => wrapMermaidTextLine(line, maxWidth));
+    }
+
+    function wrapMermaidTextLine(line, maxWidth) {
+      const text = String(line || "").trim();
+      if (!text) return [""];
+
+      const tokens = text.match(/[\u3400-\u9fff\uff00-\uffef]|[^\s\u3400-\u9fff\uff00-\uffef]+|\s+/g) || [text];
+      const lines = [];
+      let current = "";
+
+      tokens.forEach((token) => {
+        if (/^\s+$/.test(token)) {
+          if (current) current += " ";
+          return;
+        }
+
+        if (estimateTextWidth(token) > maxWidth) {
+          splitMermaidTextToken(token, maxWidth).forEach((piece) => {
+            const candidatePiece = current ? current + piece : piece;
+            if (estimateTextWidth(candidatePiece) <= maxWidth || !current) {
+              current = candidatePiece;
+              return;
+            }
+            lines.push(current.trimEnd());
+            current = piece;
+          });
+          return;
+        }
+
+        const candidate = current ? current + token : token;
+        if (estimateTextWidth(candidate) <= maxWidth || !current) {
+          current = candidate;
+          return;
+        }
+
+        lines.push(current.trimEnd());
+        current = token;
+      });
+
+      if (current) lines.push(current.trimEnd());
+      return lines.length ? lines : [text];
+    }
+
+    function splitMermaidTextToken(token, maxWidth) {
+      const pieces = [];
+      let piece = "";
+
+      for (const char of String(token)) {
+        const candidate = piece + char;
+        if (estimateTextWidth(candidate) <= maxWidth || !piece) {
+          piece = candidate;
+          continue;
+        }
+        pieces.push(piece);
+        piece = char;
+      }
+
+      if (piece) pieces.push(piece);
+      return pieces;
+    }
+
     function normalizeMermaidLabel(label) {
       let value = String(label || "").trim();
-      const first = value[0];
-      const last = value[value.length - 1];
-      if ((first === "\"" && last === "\"") || (first === "'" && last === "'")) {
-        value = value.slice(1, -1);
+      let changed = true;
+
+      while (changed && value.length > 1) {
+        changed = false;
+        const first = value[0];
+        const last = value[value.length - 1];
+        if ((first === "\"" && last === "\"") || (first === "'" && last === "'")) {
+          value = value.slice(1, -1).trim();
+          changed = true;
+          continue;
+        }
+        const shapePair = (first === "[" && last === "]") || (first === "(" && last === ")") || (first === "{" && last === "}");
+        if (shapePair) {
+          value = value.slice(1, -1).trim();
+          changed = true;
+        }
       }
+
       return value.replace(/\\"/g, "\"").replace(/\\'/g, "'");
     }
 

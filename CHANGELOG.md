@@ -30,6 +30,40 @@ This file is the source of truth for md-pew version history. Every iteration sho
 - Verified: ...
 ```
 
+## 0.1.8 - 2026-06-25
+
+### 中文
+
+- 修复：Mermaid 预览将顶层 `subgraph` 作为独立布局容器排版，避免大型架构图中的分组框和节点互相重叠。
+- 修复：`FE --> DB` 这类连接到子图的边不再生成额外普通节点，而是连接到对应分组框。
+- 修复：支持 `A --> B --> C` 链式边解析，避免同一行后续连线丢失。
+- 修改：Mermaid 节点长标签会自动换行，并清理 `([label])`、`[(label)]` 等形状包装符号。
+- 验证：检查 JavaScript 语法，并用包含 FE/BE 子图、DB、外部系统和链式边的架构图样例断言布局无分组重叠。
+
+### English
+
+- Fixed: Mermaid preview now lays out top-level `subgraph` blocks as independent containers to avoid overlapping groups and nodes in larger architecture diagrams.
+- Fixed: Edges such as `FE --> DB` no longer create extra normal nodes and now connect to the matching group frame.
+- Fixed: Added support for chained edges such as `A --> B --> C` so later links on the same line are not dropped.
+- Changed: Mermaid node labels now wrap long text and clean shape wrappers such as `([label])` and `[(label)]`.
+- Verified: Checked JavaScript syntax and asserted non-overlapping group layout with an architecture sample containing FE/BE subgraphs, DB, external systems, and chained edges.
+
+## 0.1.7 - 2026-05-28
+
+### 中文
+
+- 修复：导出图片时恢复代码块文字颜色，避免代码块被导出成看不清内容的深色块。
+- 修复：导出图片时保留代码块中的行首空格、连续空格和原始换行，避免 ASCII/Unicode 架构图被压缩变形。
+- 修改：导出图片中的代码块改为浅底深字，并让 canvas 字体栈与预览区保持一致，提高框线、箭头和中英文混排的显示稳定性。
+- 验证：检查 JavaScript 语法，并用包含框线、箭头、中文和连续空格的代码块样例断言预格式文本折行会保留空白。
+
+### English
+
+- Fixed: Image export now restores the code-block text color so code blocks are not exported as unreadable dark blocks.
+- Fixed: Image export now preserves leading spaces, repeated spaces, and original line breaks in code blocks so ASCII/Unicode architecture diagrams keep their shape.
+- Changed: Image-exported code blocks now use a light background with dark text, and the canvas code-block font stack is aligned with the preview font stack for more stable box-line, arrow, and mixed Chinese/English rendering.
+- Verified: Checked JavaScript syntax and asserted preformatted wrapping with a code-block sample containing box lines, arrows, Chinese text, and repeated spaces.
+
 ## 0.1.6 - 2026-05-26
 
 ### 中文
